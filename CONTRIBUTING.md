@@ -75,6 +75,14 @@ When reviewing or writing code, pay special attention to:
 - Any changes to `keystore.py` or API key handling
 - Dependencies added to `pyproject.toml` — check license compatibility
 
+## Versioning
+
+This project follows [Semantic Versioning](https://semver.org/) (MAJOR.MINOR.PATCH).
+
+- **0.x.x:** Early development. Breaking API changes may occur.
+- **1.0.0:** Stability declaration for Protocol interfaces (`OCREngine`, `Translator`).
+- Protocol interface changes require a **MAJOR** version bump.
+
 ## Language
 
 - **Issues / Discussions:** Japanese or English are both welcome
