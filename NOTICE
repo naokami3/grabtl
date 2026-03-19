@@ -1,0 +1,46 @@
+NOTICE — Third-Party Licenses
+==============================
+
+grabtl includes or depends on the following open-source software:
+
+PySide6
+  License: LGPL v3
+  URL: https://doc.qt.io/qtforpython-6/
+  Note: Used as GUI framework via dynamic linking.
+
+winocr
+  License: MIT
+  Author: Tomofumi Inoue
+  URL: https://github.com/GitHub30/winocr
+
+argostranslate
+  License: MIT / CC0 (dual-licensed)
+  Author: Argos Open Technologies, LLC
+  URL: https://github.com/argosopentech/argos-translate
+
+mss (python-mss)
+  License: MIT
+  Author: Mickaël Schoentgen
+  URL: https://github.com/BoboTiG/python-mss
+
+Pillow
+  License: HPND (Historical Permission Notice and Disclaimer)
+  URL: https://github.com/python-pillow/Pillow
+
+keyring
+  License: MIT
+  Author: Jason R. Coombs
+  URL: https://github.com/jaraco/keyring
+
+requests
+  License: Apache 2.0
+  Author: Kenneth Reitz
+  URL: https://github.com/psf/requests
+
+Nuitka (build tool only — not distributed with the application)
+  License: Apache 2.0
+  URL: https://nuitka.net/
+
+Inno Setup (installer tool only — not distributed with the application)
+  License: Inno Setup License (free for any use including commercial)
+  URL: https://jrsoftware.org/isinfo.php

@@ -1,0 +1,93 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "grabtl"
+version = "0.1.0"
+description = "Grab, translate, play. Drag-to-translate tool for on-screen text. Privacy-focused, works offline."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+keywords = ["game", "translation", "ocr", "chat", "japanese"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Microsoft :: Windows :: Windows 10",
+    "Operating System :: Microsoft :: Windows :: Windows 11",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Games/Entertainment",
+    "Topic :: Text Processing :: Linguistic",
+]
+dependencies = [
+    "mss>=9.0",
+    "Pillow>=10.0",
+    "keyring>=25.0",
+]
+
+[project.optional-dependencies]
+ocr-windows = ["winocr>=0.0.15"]
+translate-local = ["argostranslate>=1.9"]
+translate-cloud = ["requests>=2.31"]
+gui = ["PySide6>=6.6"]
+all = [
+    "grabtl[ocr-windows,translate-local,translate-cloud,gui]",
+]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+    "mypy>=1.10",
+    "pip-audit>=2.7",
+    "pip-licenses>=4.0",
+]
+
+[project.scripts]
+grabtl = "grabtl.cli.main:main"
+
+[project.gui-scripts]
+grabtl-gui = "grabtl.gui.main_window:main"
+
+[project.urls]
+Homepage = "https://github.com/<owner>/grabtl"
+Documentation = "https://github.com/<owner>/grabtl/blob/main/README.md"
+Repository = "https://github.com/<owner>/grabtl"
+Issues = "https://github.com/<owner>/grabtl/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/grabtl"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["src"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "S",    # bandit (security)
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "TCH",  # flake8-type-checking
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]  # allow assert in tests
+
+[tool.mypy]
+strict = true
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
