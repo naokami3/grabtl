@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint & 型チェック
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 依存パッケージをインストール
+        run: pip install -e ".[dev]"
+      - name: ruff check
+        run: ruff check src/ tests/
+      - name: ruff format --check
+        run: ruff format --check src/ tests/
+      - name: mypy
+        run: mypy src/
+
+  test:
+    name: テスト (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: 依存パッケージをインストール
+        run: pip install -e ".[dev]"
+      - name: pytest
+        run: pytest --cov=src/grabtl --cov-report=term-missing
+
+  audit:
+    name: セキュリティ監査
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 依存パッケージをインストール
+        run: pip install -e ".[dev]"
+      - name: pip-audit
+        run: pip-audit

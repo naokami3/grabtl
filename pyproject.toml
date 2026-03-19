@@ -51,10 +51,10 @@ grabtl = "grabtl.cli.main:main"
 grabtl-gui = "grabtl.gui.main_window:main"
 
 [project.urls]
-Homepage = "https://github.com/<owner>/grabtl"
-Documentation = "https://github.com/<owner>/grabtl/blob/main/README.md"
-Repository = "https://github.com/<owner>/grabtl"
-Issues = "https://github.com/<owner>/grabtl/issues"
+Homepage = "https://github.com/naokami3/grabtl"
+Documentation = "https://github.com/naokami3/grabtl/blob/main/README.md"
+Repository = "https://github.com/naokami3/grabtl"
+Issues = "https://github.com/naokami3/grabtl/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/grabtl"]

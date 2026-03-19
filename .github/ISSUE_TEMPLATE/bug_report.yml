@@ -1,0 +1,56 @@
+name: バグ報告
+description: バグや不具合の報告
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        バグ報告ありがとうございます。以下の項目をできるだけ詳しく記入してください。
+  - type: textarea
+    id: description
+    attributes:
+      label: バグの内容
+      description: 何が起きたか、何が期待される動作かを記載してください。
+      placeholder: 例）ドラッグ選択後に翻訳結果が表示されない
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      description: バグを再現するための手順を記載してください。
+      placeholder: |
+        1. アプリを起動する
+        2. 画面上のテキストをドラッグで選択する
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待される動作
+      description: 本来どのような動作が期待されるかを記載してください。
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: grabtl バージョン
+      placeholder: 例）0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS
+      options:
+        - Windows 10
+        - Windows 11
+        - その他
+    validations:
+      required: true
+  - type: textarea
+    id: additional
+    attributes:
+      label: 補足情報
+      description: スクリーンショットやログなど、参考になる情報があれば添付してください。
