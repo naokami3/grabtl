@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "agent",
+            "prompt": "The user is about to run a Bash command. Check if it is a git commit command (the tool input is: $ARGUMENTS). If it is NOT a git commit command, respond with {\"decision\": \"allow\"} and do nothing else. If it IS a git commit command, run `make lint` and `make test` first. If either fails, fix the errors and re-run until they pass. Only then allow the commit to proceed.",
+            "timeout": 120,
+            "statusMessage": "コミット前チェック（lint & test）を実行中..."
+          }
+        ]
+      }
+    ]
+  }
+}

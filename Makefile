@@ -1,4 +1,9 @@
-.PHONY: fmt lint test audit ci
+.PHONY: setup fmt lint test audit licenses ci
+
+## 開発環境セットアップ
+setup:
+	python3 -m venv .venv
+	.venv/bin/pip install -e ".[dev]"
 
 ## フォーマット
 fmt:
