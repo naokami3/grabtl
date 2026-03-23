@@ -32,6 +32,29 @@ def _create_test_image(text: str, width: int = 400, height: int = 80) -> bytes:
     return buf.getvalue()
 
 
+def _create_game_chat_image(messages: list[str]) -> bytes:
+    """ゲームチャット風の画像を生成する。"""
+    line_height = 28
+    padding = 10
+    width = 500
+    height = padding * 2 + line_height * len(messages)
+
+    img = Image.new("RGB", (width, height), color=(20, 20, 30))
+    draw = ImageDraw.Draw(img)
+    try:
+        font = ImageFont.truetype("arial.ttf", 18)
+    except OSError:
+        font = ImageFont.load_default(size=18)
+
+    for i, msg in enumerate(messages):
+        y = padding + i * line_height
+        draw.text((padding, y), msg, fill=(220, 220, 220), font=font)
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
 class TestPipelineE2E:
     """OCR → 翻訳のフルパイプラインテスト。"""
 
@@ -64,3 +87,16 @@ class TestPipelineE2E:
         result = pipeline.run(buf.getvalue(), source_lang="en", target_lang="ja")
 
         assert result.translated_text == ""
+
+    def test_ゲームチャット風画像を翻訳できる(self, pipeline) -> None:  # noqa: ANN001
+        image = _create_game_chat_image([
+            "Anyone want to raid?",
+            "Invite me please",
+        ])
+        result = pipeline.run(image, source_lang="en", target_lang="ja")
+
+        # OCR でテキストが認識され、翻訳されること
+        assert result.ocr_result.text.strip() != ""
+        assert result.translated_text.strip() != ""
+        # 翻訳結果が ASCII のみでないこと（日本語が含まれる証拠）
+        assert not result.translated_text.isascii()

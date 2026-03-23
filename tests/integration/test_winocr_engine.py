@@ -33,6 +33,32 @@ def _create_test_image(text: str, width: int = 400, height: int = 80) -> bytes:
     return buf.getvalue()
 
 
+def _create_game_chat_image(messages: list[str]) -> bytes:
+    """ゲームチャット風の画像を生成する。
+
+    暗い背景に白文字で複数行のチャットメッセージを描画する。
+    """
+    line_height = 28
+    padding = 10
+    width = 500
+    height = padding * 2 + line_height * len(messages)
+
+    img = Image.new("RGB", (width, height), color=(20, 20, 30))
+    draw = ImageDraw.Draw(img)
+    try:
+        font = ImageFont.truetype("arial.ttf", 18)
+    except OSError:
+        font = ImageFont.load_default(size=18)
+
+    for i, msg in enumerate(messages):
+        y = padding + i * line_height
+        draw.text((padding, y), msg, fill=(220, 220, 220), font=font)
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
 class TestWinOCREngine:
     def test_英語テキストを認識できる(self) -> None:
         from grabtl.core.ocr.winocr_engine import WinOCREngine
@@ -90,3 +116,31 @@ class TestWinOCREngine:
 
         engine = WinOCREngine()
         assert isinstance(engine, OCREngine)
+
+    def test_ゲームチャット風画像からテキストを認識できる(self) -> None:
+        from grabtl.core.ocr.winocr_engine import WinOCREngine
+
+        engine = WinOCREngine()
+        image = _create_game_chat_image([
+            "Player1: Anyone want to raid?",
+            "Player2: Sure, invite me",
+            "Player3: Looking for healer",
+        ])
+        result = engine.recognize(image, lang="en")
+
+        # チャットメッセージの主要な単語が認識されること
+        text_lower = result.text.lower()
+        assert "raid" in text_lower or "player" in text_lower or "invite" in text_lower
+
+    def test_複数行チャットが複数行として認識される(self) -> None:
+        from grabtl.core.ocr.winocr_engine import WinOCREngine
+
+        engine = WinOCREngine()
+        image = _create_game_chat_image([
+            "Hello World",
+            "Good Morning",
+        ])
+        result = engine.recognize(image, lang="en")
+
+        # 複数行として認識されること（改行が含まれる）
+        assert "\n" in result.text
