@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-import asyncio
+import io
 import sys
 from typing import Any
+
+from PIL import Image
 
 from grabtl.core.ocr.base import OCRResult
 
@@ -36,7 +38,8 @@ class WinOCREngine:
         Returns:
             認識結果。
         """
-        result = asyncio.run(self._winocr.recognize_png(image, lang=lang))
+        pil_image = Image.open(io.BytesIO(image))
+        result = self._winocr.recognize_pil_sync(pil_image, lang=lang)
 
         lines: list[str] = []
         total_confidence = 0.0
