@@ -15,9 +15,38 @@ git clone https://github.com/<owner>/grabtl.git
 cd grabtl
 python -m venv .venv
 .venv\Scripts\activate
-pip install -e ".[all]"
-pip install ruff mypy pytest pip-audit pip-licenses
+pip install -e ".[all,dev]"
 ```
+
+### Argostranslate Language Packages
+
+The offline translation engine (argostranslate) requires language model packages to be installed separately.
+To install the English → Japanese translation package:
+
+```python
+python -c "
+import argostranslate.package
+argostranslate.package.update_package_index()
+available = argostranslate.package.get_available_packages()
+pkg = next(p for p in available if p.from_code == 'en' and p.to_code == 'ja')
+pkg.install()
+"
+```
+
+### Windows OCR Language Packs
+
+winocr uses the Windows built-in OCR engine. The required language packs must be installed at the OS level.
+Check available languages and install missing ones (requires administrator privileges):
+
+```powershell
+# Check if English OCR is available
+Get-WindowsCapability -Online | Where-Object { $_.Name -like 'Language.OCR*' }
+
+# Install English OCR (if not available)
+Add-WindowsCapability -Online -Name "Language.OCR~~~en-US~0.0.1.0"
+```
+
+Japanese OCR is typically pre-installed on Japanese editions of Windows.
 
 ### Running Tests
 ```bash

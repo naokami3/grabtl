@@ -17,7 +17,8 @@ grabtl/
 │       │   │   ├── base.py          # Translator Protocol
 │       │   │   ├── argos.py         # argostranslate 実装
 │       │   │   ├── ollama.py        # Ollama 実装
-│       │   │   └── deepl.py         # DeepL API 実装
+│       │   │   ├── deepl.py         # DeepL API 実装
+│       │   │   └── _dll_fix.py      # Windows DLL 競合回避
 │       │   ├── capture/
 │       │   │   ├── __init__.py
 │       │   │   └── screen.py        # mss スクリーンキャプチャ
@@ -125,6 +126,20 @@ pip install grabtl[all]
 ```
 
 詳細は [pyproject.toml](../pyproject.toml) を参照。
+
+## Windows DLL 競合の制約
+
+winrt パッケージ（winocr が依存）と torch（argostranslate → ctranslate2 が依存）は、
+それぞれ異なるバージョンの `msvcp140.dll` を使用する。
+Windows では同名 DLL はプロセス内で先にロードされた方が使われるため、
+winocr を先にインポートすると torch の `c10.dll` 初期化が失敗する（WinError 1114）。
+
+**対策:** `core/translation/_dll_fix.py` の `preload_system_vcrt()` で、
+システム版の VC ランタイムを先制ロードしている。
+
+**新しいエントリポイント（GUI 等）を追加する際の注意:**
+- `main()` 関数の最初で `preload_system_vcrt()` を呼ぶこと
+- winocr や WinRT 関連の import より前に実行する必要がある
 
 ## ライセンス互換性
 
