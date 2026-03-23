@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import argparse
+import io
 import sys
 
 
@@ -29,8 +30,28 @@ def _create_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _ensure_utf8_stdout() -> None:
+    """stdout/stderr を UTF-8 に設定する。
+
+    Windows のデフォルト (cp932) では翻訳結果の日本語が文字化けするため、
+    UTF-8 で出力する。
+    """
+    if sys.stdout.encoding.lower() != "utf-8":
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    if sys.stderr.encoding.lower() != "utf-8":
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+
+
 def main() -> None:
     """CLI のメインエントリポイント。"""
+    _ensure_utf8_stdout()
+
+    # DLL 競合回避: winocr (WinRT) と torch の msvcp140.dll バージョン不一致を防ぐ
+    # 他の import より先に呼ぶ必要がある
+    from grabtl.core.translation._dll_fix import preload_system_vcrt
+
+    preload_system_vcrt()
+
     parser = _create_parser()
     args = parser.parse_args()
 
