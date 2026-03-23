@@ -6,9 +6,9 @@
         "hooks": [
           {
             "type": "agent",
-            "prompt": "The user is about to run a Bash command. Check if it is a git commit command (the tool input is: $ARGUMENTS). If it is NOT a git commit command, respond with {\"decision\": \"allow\"} and do nothing else. If it IS a git commit command, run `make lint` and `make test` first. If either fails, fix the errors and re-run until they pass. Only then allow the commit to proceed.",
-            "timeout": 120,
-            "statusMessage": "コミット前チェック（lint & test）を実行中..."
+            "prompt": "The user is about to run a Bash command. Check if it is a git commit command (the tool input is: $ARGUMENTS). If it is NOT a git commit command, respond with {\"decision\": \"allow\"} and do nothing else.\n\nIf it IS a git commit command, perform the following pre-commit checks:\n\n1. Run linter: `ruff check src/ tests/` and `ruff format --check src/ tests/`\n2. Run type checker: `mypy src/`\n3. Run ALL tests including integration tests: `pytest tests/ -v`\n   - On Windows (sys.platform == 'win32'), integration tests in tests/integration/ will run automatically.\n   - On other platforms, integration tests are skipped via pytest.mark.skipif.\n4. Review the changed files (use `git diff --cached --name-only` to see staged files) and check if the test cases are sufficient:\n   - If source files in src/ were changed, verify that corresponding test files exist and cover the changes.\n   - If new functions or classes were added, verify tests exist for them.\n   - If tests are missing or insufficient, block the commit and explain what tests should be added.\n\nIf any check fails, fix the errors and re-run until they pass. Only then allow the commit to proceed.",
+            "timeout": 300,
+            "statusMessage": "コミット前チェック（lint, test, テストケース確認）を実行中..."
           }
         ]
       }
