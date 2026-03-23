@@ -25,10 +25,9 @@ class TestDllFix:
         preload_system_vcrt()
 
         # winocr (WinRT) のインポート
-        import winocr  # noqa: F401
-
         # torch (argostranslate の依存) のインポート
         import torch  # noqa: F401
+        import winocr  # noqa: F401
 
         # 両方が同一プロセスでインポートできること
         assert True
