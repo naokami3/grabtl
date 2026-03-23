@@ -12,6 +12,9 @@ class ArgosTranslator:
     """
 
     def __init__(self) -> None:
+        from grabtl.core.translation._dll_fix import preload_system_vcrt
+
+        preload_system_vcrt()
         try:
             import argostranslate.translate as _translate  # type: ignore[import-not-found]
         except ImportError:
