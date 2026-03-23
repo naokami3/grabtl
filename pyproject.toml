@@ -81,6 +81,7 @@ select = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "N802"]  # allow assert, 日本語テスト関数名
+"src/grabtl/gui/**" = ["N802"]  # Qt override methods are camelCase
 
 [tool.mypy]
 strict = true
@@ -92,6 +93,10 @@ warn_unused_ignores = false
 
 [[tool.mypy.overrides]]
 module = ["winocr", "winocr.*", "argostranslate", "argostranslate.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["PySide6", "PySide6.*", "shiboken6", "shiboken6.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

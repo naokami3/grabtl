@@ -1,0 +1,212 @@
+"""翻訳結果を表示するフローティングオーバーレイ。"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+from PySide6.QtCore import QPropertyAnimation, QRect
+from PySide6.QtGui import QColor, QFont, QGuiApplication, QPainter, QPainterPath
+from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
+
+if TYPE_CHECKING:
+    from PySide6.QtGui import QKeyEvent, QPaintEvent
+
+    from grabtl.core.pipeline import TranslationResult
+
+_BG_COLOR = QColor(0, 0, 0, 200)
+_BORDER_RADIUS = 8
+_FADE_DURATION_MS = 300
+_PADDING = 12
+_MAX_WIDTH = 500
+
+
+class ResultOverlay(QWidget):
+    """翻訳結果をフローティング表示するウィジェット。
+
+    選択領域の上方向に表示する。
+    翻訳結果が表示されている状態でオーバーレイ外をクリックすると消える。
+    次のホットキー押下でも自動的に消える。
+    """
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        from PySide6.QtCore import Qt
+
+        self.setWindowFlags(
+            Qt.WindowType.WindowStaysOnTopHint
+            | Qt.WindowType.FramelessWindowHint
+            | Qt.WindowType.Tool
+        )
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating, False)
+        self.setMaximumWidth(_MAX_WIDTH)
+
+        # レイアウト
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(_PADDING, _PADDING, _PADDING, _PADDING)
+        layout.setSpacing(6)
+
+        # OCR テキスト（原文）
+        self._ocr_label = QLabel()
+        self._ocr_label.setWordWrap(True)
+        self._ocr_label.setFont(QFont("Segoe UI", 9))
+        self._ocr_label.setStyleSheet("color: #999999;")
+        layout.addWidget(self._ocr_label)
+
+        # 翻訳テキスト
+        self._translation_label = QLabel()
+        self._translation_label.setWordWrap(True)
+        self._translation_label.setFont(QFont("Segoe UI", 12))
+        self._translation_label.setStyleSheet("color: #FFFFFF;")
+        layout.addWidget(self._translation_label)
+
+        # ステータス（スピナー/エラー用）
+        self._status_label = QLabel()
+        self._status_label.setWordWrap(True)
+        self._status_label.setFont(QFont("Segoe UI", 10))
+        self._status_label.setStyleSheet("color: #AAAAAA;")
+        self._status_label.hide()
+        layout.addWidget(self._status_label)
+
+        # フェードアニメーション
+        self._fade_anim: QPropertyAnimation | None = None
+
+        # 翻訳結果表示中かどうか（スピナー/エラーは外クリックで消さない）
+        self._is_result_shown = False
+
+        # 表示位置の基準
+        self._near_rect = QRect()
+
+    def show_spinner(self, near_rect: QRect) -> None:
+        """処理中のスピナーを表示する。"""
+        self._near_rect = near_rect
+        self._is_result_shown = False
+        self._ocr_label.hide()
+        self._translation_label.hide()
+        self._status_label.setText("翻訳中...")
+        self._status_label.setStyleSheet("color: #AAAAAA;")
+        self._status_label.show()
+        self._position_near(near_rect)
+        self.setWindowOpacity(1.0)
+        self.show()
+        self.raise_()
+
+    def show_ocr_preview(self, text: str, near_rect: QRect) -> None:
+        """OCR 結果を先行表示する。"""
+        self._near_rect = near_rect
+        self._ocr_label.setText(text)
+        self._ocr_label.show()
+        self._translation_label.setText("翻訳中...")
+        self._translation_label.setStyleSheet("color: #999999;")
+        self._translation_label.show()
+        self._status_label.hide()
+        self._position_near(near_rect)
+        self.setWindowOpacity(1.0)
+        self.show()
+        self.raise_()
+
+    def show_result(self, result: TranslationResult, near_rect: QRect) -> None:
+        """翻訳結果を表示する。オーバーレイ外クリックで消える。"""
+        self._near_rect = near_rect
+        self._is_result_shown = True
+        self._ocr_label.setText(result.ocr_result.text)
+        self._ocr_label.show()
+        self._translation_label.setText(result.translated_text)
+        self._translation_label.setStyleSheet("color: #FFFFFF;")
+        self._translation_label.show()
+        self._status_label.hide()
+        self._position_near(near_rect)
+        self.setWindowOpacity(1.0)
+        self.show()
+        self.raise_()
+        self.activateWindow()  # フォーカスを取得（外クリック検出のため）
+
+    def show_error(self, message: str, near_rect: QRect) -> None:
+        """エラーをインライン表示する。外クリックで消える。"""
+        self._near_rect = near_rect
+        self._is_result_shown = True
+        self._ocr_label.hide()
+        self._translation_label.hide()
+        self._status_label.setText(message)
+        self._status_label.setStyleSheet("color: #FFA500;")
+        self._status_label.show()
+        self._position_near(near_rect)
+        self.setWindowOpacity(1.0)
+        self.show()
+        self.raise_()
+        self.activateWindow()
+
+    def dismiss(self) -> None:
+        """即座に非表示にする。"""
+        self._is_result_shown = False
+        if self._fade_anim is not None:
+            self._fade_anim.stop()
+        self.hide()
+
+    def _position_near(self, near_rect: QRect) -> None:
+        """選択領域の上方向にオーバーレイを配置する。"""
+        self.adjustSize()
+        overlay_h = self.sizeHint().height()
+        overlay_w = min(self.sizeHint().width(), _MAX_WIDTH)
+
+        # 選択領域の上に配置
+        x = near_rect.x() + (near_rect.width() - overlay_w) // 2
+        y = near_rect.y() - overlay_h - 8
+
+        # 画面内に収める
+        screen = QGuiApplication.screenAt(near_rect.topLeft())
+        if screen is not None:
+            avail = screen.availableGeometry()
+            # 上にはみ出す場合は下に表示
+            if y < avail.top():
+                y = near_rect.bottom() + 8
+            # 左右のはみ出し調整
+            if x < avail.left():
+                x = avail.left() + 4
+            if x + overlay_w > avail.right():
+                x = avail.right() - overlay_w - 4
+
+        self.move(x, y)
+        self.resize(overlay_w, overlay_h)
+
+    def changeEvent(self, event: Any) -> None:
+        """フォーカス喪失（オーバーレイ外クリック）でフェードアウトする。"""
+        from PySide6.QtCore import QEvent
+
+        super().changeEvent(event)
+        if (
+            event.type() == QEvent.Type.ActivationChange
+            and not self.isActiveWindow()
+            and self._is_result_shown
+        ):
+            self._fade_out()
+
+    def _fade_out(self) -> None:
+        """フェードアウトアニメーションで非表示にする。"""
+        self._fade_anim = QPropertyAnimation(self, b"windowOpacity")
+        self._fade_anim.setDuration(_FADE_DURATION_MS)
+        self._fade_anim.setStartValue(1.0)
+        self._fade_anim.setEndValue(0.0)
+        self._fade_anim.finished.connect(self.hide)
+        self._fade_anim.start()
+
+    def paintEvent(self, event: QPaintEvent) -> None:
+        """半透明黒背景 + 角丸を描画。"""
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        path = QPainterPath()
+        path.addRoundedRect(
+            0.0, 0.0,
+            float(self.width()), float(self.height()),
+            _BORDER_RADIUS, _BORDER_RADIUS,
+        )
+        painter.fillPath(path, _BG_COLOR)
+        painter.end()
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        """Esc で非表示。"""
+        from PySide6.QtCore import Qt
+
+        if event.key() == Qt.Key.Key_Escape:
+            self.dismiss()
