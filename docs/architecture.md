@@ -11,33 +11,30 @@ grabtl/
 │       │   ├── ocr/
 │       │   │   ├── __init__.py
 │       │   │   ├── base.py          # OCREngine Protocol
-│       │   │   └── winocr_engine.py  # Windows OCR 実装
+│       │   │   └── winocr_engine.py  # Windows OCR 実装（小画像自動拡大付き）
 │       │   ├── translation/
 │       │   │   ├── __init__.py
 │       │   │   ├── base.py          # Translator Protocol
-│       │   │   ├── argos.py         # argostranslate 実装
-│       │   │   ├── ollama.py        # Ollama 実装
-│       │   │   ├── deepl.py         # DeepL API 実装
+│       │   │   ├── engines.py       # EngineType (StrEnum: argos/ollama/deepl/chatgpt/gemini)
+│       │   │   ├── argos.py         # argostranslate 実装 (Tier 0)
+│       │   │   ├── ollama.py        # Ollama REST API 実装 (Tier 1)
+│       │   │   ├── deepl.py         # DeepL API 実装 (Tier 2, 未実装)
 │       │   │   └── _dll_fix.py      # Windows DLL 競合回避
 │       │   ├── capture/
 │       │   │   ├── __init__.py
 │       │   │   └── screen.py        # mss スクリーンキャプチャ
 │       │   ├── glossary/
 │       │   │   ├── __init__.py
-│       │   │   └── manager.py       # ゲーム用語辞書
-│       │   ├── security/
-│       │   │   ├── __init__.py
-│       │   │   └── keystore.py      # APIキー保存（keyring wrapper）
-│       │   └── pipeline.py          # OCR → 辞書適用 → 翻訳 パイプライン
+│       │   │   ├── manager.py       # ゲーム用語辞書 (Glossary, GlossaryEntry)
+│       │   │   └── decorator.py     # GlossaryTranslator (Translator デコレータ)
+│       │   └── pipeline.py          # OCR → 翻訳パイプライン
 │       │
 │       ├── gui/                     # PySide6 デスクトップアプリ
 │       │   ├── __init__.py
-│       │   ├── main_window.py
-│       │   ├── overlay.py           # 透過オーバーレイ（翻訳結果表示）
-│       │   ├── region_selector.py   # ドラッグ範囲選択
-│       │   ├── settings_dialog.py   # 設定画面（翻訳エンジン切替・APIキー・通信ログ）
-│       │   └── resources/
-│       │       └── i18n/            # Qt .ts 翻訳ファイル
+│       │   ├── main_window.py       # エントリポイント + システムトレイ + ホットキー
+│       │   ├── overlay.py           # 翻訳結果フローティング表示
+│       │   ├── region_selector.py   # ドラッグ範囲選択（透過オーバーレイ）
+│       │   └── settings_dialog.py   # 設定画面（翻訳エンジン切替）
 │       │
 │       └── cli/                     # CLI ツール（GUI不要で利用可能）
 │           ├── __init__.py
@@ -48,16 +45,24 @@ grabtl/
 │   │   ├── test_ocr.py
 │   │   ├── test_translation.py
 │   │   ├── test_pipeline.py
-│   │   └── test_keystore.py
-│   └── integration/
-│       └── test_network_isolation.py  # 許可外ドメインへの通信を検出するテスト
+│   │   ├── test_glossary.py
+│   │   └── test_ollama.py
+│   └── integration/                 # Windows 実機テスト（CI ではスキップ）
+│       ├── test_winocr_engine.py    # ゲームチャット風画像の OCR テスト
+│       ├── test_pipeline_e2e.py     # OCR → 翻訳フルパイプライン
+│       └── test_dll_fix.py          # DLL 競合回避の動作確認
 │
-└── docs/
-    ├── architecture.md              # このファイル
-    ├── security-design.md           # セキュリティ設計書
-    ├── plugin-guide.md              # プラグイン作成ガイド
-    ├── roadmap.md                   # ロードマップ・開発フェーズ
-    └── release.md                   # リリース・CI/CD
+├── docs/
+│   ├── architecture.md              # このファイル
+│   ├── security-design.md           # セキュリティ設計書
+│   ├── roadmap.md                   # ロードマップ・開発フェーズ
+│   ├── release.md                   # リリース・CI/CD
+│   └── adr/                         # Architecture Decision Records
+│       ├── 0001-tier0-translation-engine.md
+│       └── 0002-translation-engine-tiers.md
+│
+└── .claude/
+    └── settings.json                # Claude Code hooks（コミット前チェック）
 ```
 
 ## 設計原則
@@ -65,14 +70,12 @@ grabtl/
 - **`core/` は PySide6 に一切依存しない。** 純粋な Python ライブラリとして `pip install` で単独利用可能
 - **OCR / 翻訳エンジンは Protocol (`typing.Protocol`) で定義。** 外部から差し替え可能
 - **設定は `core/` では dict / dataclass で受け取る。** GUI 層が QSettings ↔ dict 変換を担当
+- **Glossary はデコレータパターン。** Pipeline を変更せず、Translator をラップして用語辞書を適用
 
 ## Protocol インターフェース
 
 ```python
 # core/ocr/base.py
-from typing import Protocol
-from dataclasses import dataclass
-
 @dataclass
 class OCRResult:
     text: str
@@ -97,35 +100,45 @@ class Translator(Protocol):
     def allowed_endpoints(self) -> list[str]: ...
 ```
 
-## 利用モードの3段階設計
+## 翻訳エンジンの Tier 構成
 
-### Tier 0: 完全ローカル（APIキー不要・通信ゼロ）— 初期体験
-- OCR: winocr（Windows 標準 OCR）
-- 翻訳: argostranslate（オフライン。モデル約30MBをインストーラーに同梱）
-- 起動 → ドラッグ → 翻訳が出る。設定画面を開く必要なし
+ADR-0002 で決定。ユーザーは設定画面で選ぶだけ。
 
-### Tier 1: ローカル LLM（Ollama 連携・通信ゼロ）— 中級者
-- 翻訳: Ollama + gemma3-translator:4b 等
-- 設定画面で「Ollama を使う」を ON にするだけ
-- Ollama インストールガイドとモデルプルコマンドをワンクリックコピー
+| Tier | 表示名 | エンジン | 要件 | 状態 |
+|------|--------|---------|------|------|
+| 0 | 機械翻訳 | Opus-MT + Glossary | なし（即使える） | ✅ 実装済み |
+| 1 | AI翻訳 | Ollama + Qwen 2.5 3B | Ollama インストール | ✅ 実装済み |
+| 2a | DeepL | DeepL API | APIキー | 未実装 |
+| 2b | ChatGPT | OpenAI API | APIキー | 未実装 |
+| 2c | Gemini | Google Gemini API | APIキー | 未実装 |
 
-### Tier 2: クラウド API（BYOK・最高品質）— 上級者
-- DeepL / Claude / GPT / Gemini をユーザー自身の APIキーで利用
-- keyring で暗号化保存。セキュリティ説明を表示
+### ゲーム用語辞書（Glossary）
 
-## パッケージ構成
+全 Tier で共通に適用される前後処理:
+- **PRE_REPLACE**: 略語を翻訳前に完全置換（GG → お疲れ様, LFG → メンバー募集）
+- **POST_REPLACE**: ゲーム用語を翻訳後に上書き（raid → レイド, dungeon → ダンジョン）
 
-コアのみ利用:
-```bash
-pip install grabtl[ocr-windows,translate-local]
-```
+GlossaryTranslator デコレータで Translator をラップするため、Pipeline の変更は不要。
 
-フルインストール:
-```bash
-pip install grabtl[all]
-```
+## GUI アーキテクチャ
 
-詳細は [pyproject.toml](../pyproject.toml) を参照。
+### 操作フロー
+
+1. アプリ起動 → システムトレイに常駐（多重起動防止: Windows Named Mutex）
+2. Ctrl+Shift+G → 全画面透過オーバーレイ → ドラッグで領域選択
+3. キャプチャ → OCR → 翻訳（バックグラウンド QThread）
+4. 段階的表示: OCR 結果を先に表示 → 翻訳結果で更新
+5. オーバーレイ外クリックで結果を消去
+
+### グローバルホットキー
+
+Win32 `RegisterHotKey` API + `QAbstractNativeEventFilter` で実装。
+PySide6 の `QShortcut` はフォーカスが必要なため使用不可。
+
+### DPI スケーリング
+
+RegionSelector は論理座標と物理ピクセル座標を分離して emit。
+`QScreen.devicePixelRatio()` で変換し、`mss` には物理座標を渡す。
 
 ## Windows DLL 競合の制約
 
@@ -160,3 +173,10 @@ PyQt6 ではなく PySide6 を選定した理由:
 - PyQt6 は GPL v3 → プロジェクト全体が GPL に縛られ、企業の独自改変を非公開にできない
 - PySide6 は LGPL v3 → MIT との互換性あり。企業の法務審査を通りやすい
 - API は PyQt6 と 99% 同一で移行コストが極めて低い
+
+## ADR（Architecture Decision Records）
+
+技術的な意思決定の記録は `docs/adr/` に保存:
+
+- [ADR-0001: Tier 0 翻訳エンジンの選定](adr/0001-tier0-translation-engine.md) — NLLB/FuguMT/Sugoi を評価し Opus-MT + Glossary を採用
+- [ADR-0002: 翻訳エンジンの Tier 構成](adr/0002-translation-engine-tiers.md) — Tier 0/1/2 の構成とモデル選定

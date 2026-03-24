@@ -1,7 +1,7 @@
 # CLAUDE.md — grabtl
 
 ゲーム内チャットをドラッグ選択で翻訳する Windows デスクトップアプリ。
-Python 3.11+ / winocr / argostranslate / PySide6。
+Python 3.11+ / winocr / argostranslate / Ollama / PySide6。
 
 ## コマンド
 
@@ -10,6 +10,7 @@ Python 3.11+ / winocr / argostranslate / PySide6。
 - `mypy src/` — 型チェック（pyproject.toml に strict 設定済み）
 - `pytest tests/ -v` — テスト実行（unit + integration）
 - `pip install -e ".[all,dev]"` — 開発環境セットアップ
+- `python -m grabtl.gui.main_window` — GUI 起動
 
 ## コーディング規約
 
@@ -32,8 +33,10 @@ Python 3.11+ / winocr / argostranslate / PySide6。
 
 ## 既知の落とし穴
 
-- **WinRT/torch DLL 競合**: winocr と argostranslate を同一プロセスで使う場合、エントリポイントの最初に `preload_system_vcrt()` を呼ぶ必要がある。詳細は `core/translation/_dll_fix.py` と [docs/architecture.md](docs/architecture.md) を参照
+- **WinRT/torch DLL 競合**: エントリポイントの最初に `preload_system_vcrt()` を呼ぶ。詳細は `core/translation/_dll_fix.py`
 - **Windows OCR 言語パック**: winocr は OS レベルの OCR 言語パックに依存。英語 OCR が未インストールの場合がある
+- **Ollama のプロキシバイパス**: `urllib.request` はデフォルトで `HTTP_PROXY` を使う。localhost 通信には `ProxyHandler({})` でバイパスが必要
+- **Qt の camelCase メソッド**: `paintEvent` 等の Qt override は ruff N802 を `gui/**` で除外設定済み
 
 ## 関連ドキュメント
 
@@ -41,4 +44,5 @@ Python 3.11+ / winocr / argostranslate / PySide6。
 - セキュリティ設計: [docs/security-design.md](docs/security-design.md)
 - ロードマップ: [docs/roadmap.md](docs/roadmap.md)
 - リリース・CI/CD: [docs/release.md](docs/release.md)
+- ADR: [docs/adr/](docs/adr/)
 - コントリビュートガイド: [CONTRIBUTING.md](CONTRIBUTING.md)
