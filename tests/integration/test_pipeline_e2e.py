@@ -11,6 +11,8 @@ import sys
 
 import pytest
 
+from grabtl.core.pipeline import Pipeline  # noqa: E402
+
 pytestmark = pytest.mark.skipif(sys.platform != "win32", reason="Windows 専用テスト")
 
 PIL = pytest.importorskip("PIL", reason="Pillow が必要")
@@ -59,18 +61,17 @@ class TestPipelineE2E:
     """OCR → 翻訳のフルパイプラインテスト。"""
 
     @pytest.fixture
-    def pipeline(self):  # noqa: ANN201
+    def pipeline(self) -> Pipeline:
         from grabtl.core.translation._dll_fix import preload_system_vcrt
 
         preload_system_vcrt()
 
         from grabtl.core.ocr.winocr_engine import WinOCREngine
-        from grabtl.core.pipeline import Pipeline
         from grabtl.core.translation.argos import ArgosTranslator
 
         return Pipeline(ocr_engine=WinOCREngine(), translator=ArgosTranslator())
 
-    def test_英語テキストを日本語に翻訳できる(self, pipeline) -> None:  # noqa: ANN001
+    def test_英語テキストを日本語に翻訳できる(self, pipeline: Pipeline) -> None:
         image = _create_test_image("Hello")
         result = pipeline.run(image, source_lang="en", target_lang="ja")
 
@@ -79,7 +80,7 @@ class TestPipelineE2E:
         # 翻訳結果が元の英語テキストとは異なること（実際に翻訳された証拠）
         assert result.translated_text != result.ocr_result.text
 
-    def test_空白画像は空の翻訳結果を返す(self, pipeline) -> None:  # noqa: ANN001
+    def test_空白画像は空の翻訳結果を返す(self, pipeline: Pipeline) -> None:
         img = Image.new("RGB", (200, 50), color="white")
         buf = io.BytesIO()
         img.save(buf, format="PNG")
@@ -88,7 +89,7 @@ class TestPipelineE2E:
 
         assert result.translated_text == ""
 
-    def test_ゲームチャット風画像を翻訳できる(self, pipeline) -> None:  # noqa: ANN001
+    def test_ゲームチャット風画像を翻訳できる(self, pipeline: Pipeline) -> None:
         image = _create_game_chat_image([
             "Anyone want to raid?",
             "Invite me please",

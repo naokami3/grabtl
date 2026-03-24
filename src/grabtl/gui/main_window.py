@@ -355,16 +355,17 @@ def _create_tray_icon() -> QIcon:
     return QIcon(pixmap)
 
 
+_MUTEX_NAME = "grabtl_single_instance"
+_ERROR_ALREADY_EXISTS = 183
+
+
 def _acquire_single_instance_lock() -> bool:
     """多重起動を防止する。既に起動中なら False を返す。"""
     if sys.platform != "win32":
         return True
-    # Windows Named Mutex で排他制御
-    _MUTEX_NAME = "grabtl_single_instance"  # noqa: N806
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
     kernel32.CreateMutexW(None, False, _MUTEX_NAME)
-    # ERROR_ALREADY_EXISTS (183) なら既に別インスタンスが起動中
-    return ctypes.get_last_error() != 183  # noqa: PLR2004
+    return ctypes.get_last_error() != _ERROR_ALREADY_EXISTS
 
 
 def main() -> None:

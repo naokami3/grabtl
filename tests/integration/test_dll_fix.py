@@ -20,17 +20,18 @@ class TestDllFix:
         preload_system_vcrt()
 
     def test_preload後にwinocrとtorchが共存できる(self) -> None:
+        import importlib
+
         from grabtl.core.translation._dll_fix import preload_system_vcrt
 
         preload_system_vcrt()
 
-        # winocr (WinRT) のインポート
-        # torch (argostranslate の依存) のインポート
-        import torch  # noqa: F401
-        import winocr  # noqa: F401
+        # import 自体が成功すること（DLL 競合が起きないこと）をテスト
+        torch = importlib.import_module("torch")
+        winocr = importlib.import_module("winocr")
 
-        # 両方が同一プロセスでインポートできること
-        assert True
+        assert torch is not None
+        assert winocr is not None
 
     def test_preload後にWinOCREngineとArgosTranslatorが共存できる(self) -> None:
         from grabtl.core.translation._dll_fix import preload_system_vcrt

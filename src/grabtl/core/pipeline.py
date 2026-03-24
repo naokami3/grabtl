@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from grabtl.core.ocr.base import OCRResult  # noqa: TCH001
+from grabtl.core.ocr.base import OCRResult  # noqa: TCH001 — dataclass フィールドで実行時に必要
 
 if TYPE_CHECKING:
     from grabtl.core.ocr.base import OCREngine
