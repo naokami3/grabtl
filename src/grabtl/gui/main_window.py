@@ -163,6 +163,9 @@ class TrayApp:
         self._unload_timer.timeout.connect(self._check_model_unload)
         self._unload_timer.start()
 
+        # 初回オンボーディング
+        self._show_onboarding_if_first_launch()
+
     @staticmethod
     def _load_engine_setting() -> str:
         """QSettings から保存済みのエンジン設定を読み込む。"""
@@ -311,6 +314,23 @@ class TrayApp:
         inner = getattr(self._translator, "_translator", None)
         if inner is not None and hasattr(inner, "should_unload") and inner.should_unload():
             inner.unload()
+
+    def _show_onboarding_if_first_launch(self) -> None:
+        """初回起動時にオンボーディングバルーンを表示する。"""
+        from PySide6.QtCore import QSettings
+
+        settings = QSettings()
+        if settings.value("app/onboarding_done", False, type=bool):
+            return
+
+        settings.setValue("app/onboarding_done", True)
+        self._tray.showMessage(
+            "grabtl",
+            "Ctrl+Shift+G を押して翻訳したいテキストをドラッグで選択してください。\n"
+            "トレイアイコンの右クリックから設定を変更できます。",
+            QSystemTrayIcon.MessageIcon.Information,
+            5000,
+        )
 
     def _show_settings(self) -> None:
         """設定ダイアログを表示する。"""

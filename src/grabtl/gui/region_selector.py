@@ -4,8 +4,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QPoint, QRect, QTimer, Signal
-from PySide6.QtGui import QColor, QGuiApplication, QKeyEvent, QMouseEvent, QPainter, QPainterPath
+from PySide6.QtCore import QPoint, QRect, Qt, QTimer, Signal
+from PySide6.QtGui import (
+    QColor,
+    QFont,
+    QGuiApplication,
+    QKeyEvent,
+    QMouseEvent,
+    QPainter,
+    QPainterPath,
+)
 from PySide6.QtWidgets import QWidget
 
 if TYPE_CHECKING:
@@ -95,6 +103,17 @@ class RegionSelector(QWidget):
         else:
             # 選択前は全面を暗くする
             painter.fillRect(self.rect(), _OVERLAY_COLOR)
+
+            # ドラッグ前のヒント表示
+            hint_font = QFont("Segoe UI", 16)
+            painter.setFont(hint_font)
+            painter.setPen(QColor(255, 255, 255, 200))
+            painter.drawText(
+                self.rect(),
+                Qt.AlignmentFlag.AlignCenter,
+                "翻訳したいテキストをドラッグで選択してください\n\n"
+                "Esc でキャンセル",
+            )
 
         painter.end()
 
