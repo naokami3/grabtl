@@ -28,17 +28,17 @@ class WinOCREngine:
             raise ImportError(msg) from None  # noqa: B904
         self._winocr: Any = _winocr
 
-    def recognize(self, image: bytes, lang: str = "en") -> OCRResult:
+    def recognize(self, image: bytes | Image.Image, lang: str = "en") -> OCRResult:
         """画像からテキストを認識する。
 
         Args:
-            image: PNG 形式の画像バイト列。
+            image: PNG 形式の画像バイト列、または PIL Image。
             lang: 認識対象の言語コード。
 
         Returns:
             認識結果。
         """
-        pil_image: Image.Image = Image.open(io.BytesIO(image))
+        pil_image = image if isinstance(image, Image.Image) else Image.open(io.BytesIO(image))
 
         # 小さい画像はOCR精度が低いため拡大する
         min_dimension = 150

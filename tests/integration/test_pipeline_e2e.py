@@ -62,14 +62,10 @@ class TestPipelineE2E:
 
     @pytest.fixture
     def pipeline(self) -> Pipeline:
-        from grabtl.core.translation._dll_fix import preload_system_vcrt
-
-        preload_system_vcrt()
-
         from grabtl.core.ocr.winocr_engine import WinOCREngine
-        from grabtl.core.translation.argos import ArgosTranslator
+        from grabtl.core.translation.ct2_translator import CT2Translator
 
-        return Pipeline(ocr_engine=WinOCREngine(), translator=ArgosTranslator())
+        return Pipeline(ocr_engine=WinOCREngine(), translator=CT2Translator())
 
     def test_英語テキストを日本語に翻訳できる(self, pipeline: Pipeline) -> None:
         image = _create_test_image("Hello")

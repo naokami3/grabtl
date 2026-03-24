@@ -101,6 +101,8 @@ class TranslationWorker(QThread):
             )
         except Exception as e:
             self.error.emit(str(e))
+        finally:
+            self._image = b""  # キャプチャ画像の参照を解放
 
 
 class TrayApp:
@@ -154,6 +156,12 @@ class TrayApp:
         self._hotkey_filter = HotkeyFilter(self._activate_selection)
         self._hotkey_filter.install(app)
         self._register_hotkey()
+
+        # モデルアンロードタイマー（60秒ごとにチェック）
+        self._unload_timer = QTimer()
+        self._unload_timer.setInterval(60_000)
+        self._unload_timer.timeout.connect(self._check_model_unload)
+        self._unload_timer.start()
 
     @staticmethod
     def _load_engine_setting() -> str:
@@ -291,6 +299,18 @@ class TrayApp:
 
     def _on_selection_cancelled(self) -> None:
         """選択がキャンセルされた。"""
+
+    def _check_model_unload(self) -> None:
+        """アイドル時に翻訳モデルをアンロードしてメモリを解放する。"""
+        if self._translator is None:
+            return
+        # CT2Translator の should_unload() があれば呼ぶ
+        if hasattr(self._translator, "should_unload") and self._translator.should_unload():
+            self._translator.unload()
+        # GlossaryTranslator でラップされている場合、内部の translator もチェック
+        inner = getattr(self._translator, "_translator", None)
+        if inner is not None and hasattr(inner, "should_unload") and inner.should_unload():
+            inner.unload()
 
     def _show_settings(self) -> None:
         """設定ダイアログを表示する。"""

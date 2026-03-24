@@ -3,20 +3,27 @@
 argostranslate / stanza / torch に依存しない軽量な Tier 0 実装。
 argostranslate がダウンロードしたモデルファイルをそのまま再利用する。
 長文は pysbd で文分割してバッチ翻訳する。
+アイドル時にモデルをアンロードしてメモリを解放できる。
 """
 
 from __future__ import annotations
 
+import gc
+import time
 from pathlib import Path
 from typing import Any
 
+import pysbd
+
 _DEFAULT_PACKAGES_DIR = Path.home() / ".local" / "share" / "argos-translate" / "packages"
+_UNLOAD_AFTER_SECONDS = 300  # 5分
 
 
 class CT2Translator:
     """CTranslate2 + SentencePiece による Opus-MT 翻訳。
 
     Tier 0: API キー不要、ネットワーク通信なし、torch 不要。
+    アイドル時にモデルをアンロードしてメモリを解放できる。
     """
 
     def __init__(self, model_dir: str | Path | None = None) -> None:
@@ -28,6 +35,8 @@ class CT2Translator:
         self._translator: Any = None
         self._sp: Any = None
         self._loaded = False
+        self._last_used: float = 0.0
+        self._segmenter = pysbd.Segmenter(language="en", clean=False)
 
     def _ensure_loaded(self) -> None:
         """初回呼び出し時にモデルをロードする。"""
@@ -58,23 +67,32 @@ class CT2Translator:
         self._sp.Load(str(sp_path))
         self._loaded = True
 
+    def unload(self) -> None:
+        """モデルをアンロードしてメモリを解放する。
+
+        次回 translate() 時に自動で再ロードされる。
+        """
+        self._translator = None
+        self._sp = None
+        self._loaded = False
+        gc.collect()
+
+    def should_unload(self) -> bool:
+        """アンロードすべきかどうかを返す。"""
+        if not self._loaded:
+            return False
+        return time.monotonic() - self._last_used > _UNLOAD_AFTER_SECONDS
+
     def translate(self, text: str, source: str, target: str) -> str:
         """テキストを翻訳する。
 
         長文は pysbd で文分割し、バッチ翻訳して結合する。
-
-        Args:
-            text: 翻訳対象のテキスト。
-            source: ソース言語コード（例: "en"）。
-            target: ターゲット言語コード（例: "ja"）。
-
-        Returns:
-            翻訳されたテキスト。
         """
         if not text.strip():
             return ""
 
         self._ensure_loaded()
+        self._last_used = time.monotonic()
 
         # 文分割
         sentences = self._split_sentences(text)
@@ -86,19 +104,13 @@ class CT2Translator:
         results = self._translator.translate_batch(tokenized)
 
         # デコードして結合
-        translated_sentences = [
-            self._sp.decode(r.hypotheses[0]) for r in results
-        ]
+        translated_sentences = [self._sp.decode(r.hypotheses[0]) for r in results]
 
         return " ".join(translated_sentences)
 
-    @staticmethod
-    def _split_sentences(text: str) -> list[str]:
+    def _split_sentences(self, text: str) -> list[str]:
         """pysbd で文分割する。"""
-        import pysbd
-
-        segmenter = pysbd.Segmenter(language="en", clean=False)
-        sentences = segmenter.segment(text)
+        sentences = self._segmenter.segment(text)
         return [s.strip() for s in sentences if s.strip()]
 
     @property

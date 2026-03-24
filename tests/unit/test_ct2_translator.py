@@ -87,17 +87,17 @@ class TestCT2TranslatorWithMock:
 
 class TestSplitSentences:
     def test_単文は分割しない(self) -> None:
-        result = CT2Translator._split_sentences("Hello world")
+        result = CT2Translator(model_dir="/dummy")._split_sentences("Hello world")
         assert result == ["Hello world"]
 
     def test_複数文を分割する(self) -> None:
-        result = CT2Translator._split_sentences(
+        result = CT2Translator(model_dir="/dummy")._split_sentences(
             "The dragon was spotted. Adventurers are needed."
         )
         assert len(result) == 2
 
     def test_略語で誤分割しない(self) -> None:
-        result = CT2Translator._split_sentences(
+        result = CT2Translator(model_dir="/dummy")._split_sentences(
             "Dr. Smith found the artifact."
         )
         assert len(result) == 1

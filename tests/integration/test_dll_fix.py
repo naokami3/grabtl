@@ -33,17 +33,13 @@ class TestDllFix:
         assert torch is not None
         assert winocr is not None
 
-    def test_preload後にWinOCREngineとArgosTranslatorが共存できる(self) -> None:
-        from grabtl.core.translation._dll_fix import preload_system_vcrt
-
-        preload_system_vcrt()
-
+    def test_WinOCREngineとCT2Translatorが共存できる(self) -> None:
         from grabtl.core.ocr.winocr_engine import WinOCREngine
-        from grabtl.core.translation.argos import ArgosTranslator
+        from grabtl.core.translation.ct2_translator import CT2Translator
 
         # 両方インスタンス化できること
         ocr = WinOCREngine()
-        translator = ArgosTranslator()
+        translator = CT2Translator()
 
         assert ocr.name == "Windows OCR"
         assert translator.is_local is True
