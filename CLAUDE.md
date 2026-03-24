@@ -35,8 +35,10 @@ Python 3.11+ / winocr / argostranslate / Ollama / PySide6。
 
 - **WinRT/torch DLL 競合**: エントリポイントの最初に `preload_system_vcrt()` を呼ぶ。詳細は `core/translation/_dll_fix.py`
 - **Windows OCR 言語パック**: winocr は OS レベルの OCR 言語パックに依存。英語 OCR が未インストールの場合がある
-- **Ollama のプロキシバイパス**: `urllib.request` はデフォルトで `HTTP_PROXY` を使う。localhost 通信には `ProxyHandler({})` でバイパスが必要
+- **HTTP クライアントは requests を使う**: `urllib.request` は使わない。ruff S310 が発火し、`noqa` で抑制すると linter の意味が失われる。詳細は [ADR-0003](docs/adr/0003-http-client-requests.md)
+- **Ollama のプロキシバイパス**: localhost 通信には `session.trust_env = False` でプロキシを無効化
 - **Qt の camelCase メソッド**: `paintEvent` 等の Qt override は ruff N802 を `gui/**` で除外設定済み
+- **linter の警告は `noqa` で抑制する前に構造的な解決を検討する**: `noqa` は誤検知の場合のみ使う
 
 ## 関連ドキュメント
 
