@@ -77,33 +77,59 @@ class _ApiKeyCheckWorker(QThread):
         self._api_key = api_key
 
     def run(self) -> None:
-        """テスト翻訳を実行して API キーが有効か確認する。"""
+        """軽量なリクエストで API キーが有効か確認する。"""
+        import requests
+
         try:
-            translator = self._create_translator()
-            result = translator.translate("Hello", "en", "ja")
-            if result.strip():
-                self.result.emit(True, f"接続OK（翻訳結果: {result[:30]}）")
+            if self._engine == EngineType.DEEPL:
+                # DeepL: 使用量取得（翻訳せずにキーを検証）
+                base = "https://api-free.deepl.com" if self._api_key.endswith(":fx") else "https://api.deepl.com"
+                resp = requests.get(
+                    f"{base}/v2/usage",
+                    headers={"Authorization": f"DeepL-Auth-Key {self._api_key}"},
+                    timeout=10,
+                )
+                if resp.ok:
+                    usage = resp.json()
+                    used = usage.get("character_count", 0)
+                    limit = usage.get("character_limit", 0)
+                    self.result.emit(True, f"接続OK（使用量: {used:,} / {limit:,} 文字）")
+                    return
+            elif self._engine == EngineType.CHATGPT:
+                # OpenAI: モデル一覧取得（翻訳せずにキーを検証）
+                resp = requests.get(
+                    "https://api.openai.com/v1/models",
+                    headers={"Authorization": f"Bearer {self._api_key}"},
+                    timeout=10,
+                )
+                if resp.ok:
+                    self.result.emit(True, "接続OK")
+                    return
+            elif self._engine == EngineType.GEMINI:
+                # Gemini: モデル一覧取得（翻訳せずにキーを検証）
+                resp = requests.get(
+                    "https://generativelanguage.googleapis.com/v1beta/models",
+                    headers={"x-goog-api-key": self._api_key},
+                    timeout=10,
+                )
+                if resp.ok:
+                    self.result.emit(True, "接続OK")
+                    return
             else:
-                self.result.emit(False, "翻訳結果が空です")
+                self.result.emit(False, f"不明なエンジン: {self._engine}")
+                return
+
+            # HTTP エラー
+            if resp.status_code in (401, 403):
+                self.result.emit(False, "API キーが無効です")
+            else:
+                self.result.emit(False, f"API エラー（HTTP {resp.status_code}）")
+        except requests.exceptions.ConnectionError:
+            self.result.emit(
+                False, "サーバーに接続できません。インターネット接続を確認してください。"
+            )
         except Exception as e:
             self.result.emit(False, str(e))
-
-    def _create_translator(self) -> Any:
-        """エンジンに応じた Translator を生成する。"""
-        if self._engine == EngineType.DEEPL:
-            from grabtl.core.translation.deepl import DeepLTranslator
-
-            return DeepLTranslator(api_key=self._api_key)
-        if self._engine == EngineType.CHATGPT:
-            from grabtl.core.translation.chatgpt import ChatGPTTranslator
-
-            return ChatGPTTranslator(api_key=self._api_key)
-        if self._engine == EngineType.GEMINI:
-            from grabtl.core.translation.gemini import GeminiTranslator
-
-            return GeminiTranslator(api_key=self._api_key)
-        msg = f"Unknown engine: {self._engine}"
-        raise ValueError(msg)
 
 
 class SettingsDialog(QWidget):
@@ -288,7 +314,10 @@ class SettingsDialog(QWidget):
         console_url = _API_CONSOLE_URLS.get(engine, "")
         if console_url:
             console_btn = QPushButton("管理画面を開く")
-            console_btn.clicked.connect(lambda url=console_url: webbrowser.open(url))
+            # clicked は bool を渡すので、_checked で受けて無視する
+            console_btn.clicked.connect(
+                lambda _checked=False, url=console_url: webbrowser.open(url)
+            )
             btn_layout.addWidget(console_btn)
 
         layout.addLayout(btn_layout)

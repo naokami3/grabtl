@@ -8,7 +8,7 @@ import io
 import sys
 from typing import Any
 
-from PySide6.QtCore import QByteArray, QRect, QThread, QTimer, Signal
+from PySide6.QtCore import QByteArray, QRect, Qt, QThread, QTimer, Signal
 from PySide6.QtGui import QAction, QIcon, QPixmap
 from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
@@ -298,10 +298,12 @@ class TrayApp:
             self._settings_dialog.raise_()
             self._settings_dialog.activateWindow()
             return
-        self._settings_dialog = SettingsDialog(current_engine=self._current_engine)
-        self._settings_dialog.engine_changed.connect(self._on_engine_changed)
-        self._settings_dialog.destroyed.connect(self._on_settings_closed)
-        self._settings_dialog.show()
+        dialog = SettingsDialog(current_engine=self._current_engine)
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        dialog.engine_changed.connect(self._on_engine_changed)
+        dialog.destroyed.connect(self._on_settings_closed)
+        self._settings_dialog = dialog
+        dialog.show()
 
     def _on_engine_changed(self, engine: str) -> None:
         """エンジンが変更された。再初期化する。"""

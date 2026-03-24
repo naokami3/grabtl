@@ -110,8 +110,16 @@ def _handle_http_error(resp: requests.Response, *, provider: str) -> None:
         )
     if code == 429:
         retry_after = resp.headers.get("Retry-After")
+        # レスポンスボディから詳細を取得（デバッグ用）
+        detail = ""
+        import contextlib
+
+        with contextlib.suppress(Exception):
+            body = resp.json()
+            if "error" in body:
+                detail = f" ({body['error'].get('message', '')})"
         raise RateLimitError(
-            f"{provider} の利用制限に達しました。しばらく待ってから再試行してください。",
+            f"{provider} の利用制限に達しました。しばらく待ってから再試行してください。{detail}",
             provider=provider,
             retry_after=int(retry_after) if retry_after and retry_after.isdigit() else None,
         )
