@@ -21,9 +21,19 @@ from grabtl.gui.settings_dialog import SettingsDialog
 _WM_HOTKEY = 0x0312
 _MOD_CONTROL = 0x0002
 _MOD_SHIFT = 0x0004
+_MOD_ALT = 0x0001
 _HOTKEY_ID = 1
-_VK_G = 0x47  # 'G' キー
 _CAPTURE_DELAY_MS = 200
+
+# ホットキープリセット（表示名, 修飾キー, 仮想キーコード）
+HOTKEY_PRESETS: dict[str, tuple[int, int]] = {
+    "Ctrl+Shift+G": (_MOD_CONTROL | _MOD_SHIFT, 0x47),
+    "Ctrl+Shift+T": (_MOD_CONTROL | _MOD_SHIFT, 0x54),
+    "Ctrl+Alt+T": (_MOD_CONTROL | _MOD_ALT, 0x54),
+    "F9": (0, 0x78),
+    "F10": (0, 0x79),
+}
+_DEFAULT_HOTKEY = "Ctrl+Shift+G"
 
 
 class HotkeyFilter:
@@ -111,14 +121,19 @@ class TrayApp:
     def __init__(self, app: QApplication) -> None:
         self._app = app
 
+        # 現在のホットキー名を取得
+        from PySide6.QtCore import QSettings
+
+        self._hotkey_name = str(QSettings().value("app/hotkey", _DEFAULT_HOTKEY))
+
         # トレイアイコン
         self._tray = QSystemTrayIcon()
         self._tray.setIcon(_create_tray_icon())
-        self._tray.setToolTip("grabtl — 待機中 (Ctrl+Shift+G)")
+        self._tray.setToolTip(f"grabtl — 待機中 ({self._hotkey_name})")
 
         # トレイメニュー
         menu = QMenu()
-        translate_action = QAction("翻訳する (Ctrl+Shift+G)", menu)
+        translate_action = QAction(f"翻訳する ({self._hotkey_name})", menu)
         translate_action.triggered.connect(self._activate_selection)
         menu.addAction(translate_action)
         settings_action = QAction("設定...", menu)
@@ -214,18 +229,24 @@ class TrayApp:
         self._ocr_engine = ocr
         self._translator = translator
         self._engines_ready = True
-        self._tray.setToolTip("grabtl — 待機中 (Ctrl+Shift+G)")
+        self._tray.setToolTip(f"grabtl — 待機中 ({self._hotkey_name})")
 
     def _on_engine_error(self, msg: str) -> None:
         """エンジン初期化エラー。"""
         self._tray.showMessage("grabtl", f"翻訳エンジンの初期化に失敗しました: {msg}")
 
     def _register_hotkey(self) -> None:
-        """グローバルホットキーを登録する。"""
+        """QSettings からホットキー設定を読み込んで登録する。"""
         if sys.platform != "win32":
             return
-        # Ctrl+Shift+G
-        ctypes.windll.user32.RegisterHotKey(0, _HOTKEY_ID, _MOD_CONTROL | _MOD_SHIFT, _VK_G)
+        from PySide6.QtCore import QSettings
+
+        settings = QSettings()
+        hotkey_name = settings.value("app/hotkey", _DEFAULT_HOTKEY)
+        modifiers, vk = HOTKEY_PRESETS.get(
+            str(hotkey_name), HOTKEY_PRESETS[_DEFAULT_HOTKEY]
+        )
+        ctypes.windll.user32.RegisterHotKey(0, _HOTKEY_ID, modifiers, vk)
 
     def _unregister_hotkey(self) -> None:
         """グローバルホットキーを解除する。"""
@@ -317,6 +338,16 @@ class TrayApp:
         if inner is not None and hasattr(inner, "should_unload") and inner.should_unload():
             inner.unload()
 
+    def _on_hotkey_changed(self, hotkey_name: str) -> None:
+        """ホットキーが変更された。再登録する。"""
+        self._unregister_hotkey()
+        from PySide6.QtCore import QSettings
+
+        settings = QSettings()
+        settings.setValue("app/hotkey", hotkey_name)
+        self._register_hotkey()
+        self._tray.setToolTip(f"grabtl — 待機中 ({hotkey_name})")
+
     def _show_onboarding_if_first_launch(self) -> None:
         """初回起動時にオンボーディングバルーンを表示する。"""
         from PySide6.QtCore import QSettings
@@ -326,9 +357,10 @@ class TrayApp:
             return
 
         settings.setValue("app/onboarding_done", True)
+        hotkey = str(settings.value("app/hotkey", _DEFAULT_HOTKEY))
         self._tray.showMessage(
             "grabtl",
-            "Ctrl+Shift+G を押して翻訳したいテキストをドラッグで選択してください。\n"
+            f"{hotkey} を押して翻訳したいテキストをドラッグで選択してください。\n"
             "トレイアイコンの右クリックから設定を変更できます。",
             QSystemTrayIcon.MessageIcon.Information,
             5000,
@@ -343,6 +375,7 @@ class TrayApp:
         dialog = SettingsDialog(current_engine=self._current_engine)
         dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         dialog.engine_changed.connect(self._on_engine_changed)
+        dialog.hotkey_changed.connect(self._on_hotkey_changed)
         dialog.destroyed.connect(self._on_settings_closed)
         self._settings_dialog = dialog
         dialog.show()

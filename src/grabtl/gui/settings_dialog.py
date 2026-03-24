@@ -9,6 +9,7 @@ from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import (
     QApplication,
+    QComboBox,
     QDialogButtonBox,
     QGroupBox,
     QHBoxLayout,
@@ -136,6 +137,7 @@ class SettingsDialog(QWidget):
     """設定ダイアログ。非モーダルで表示する。"""
 
     engine_changed = Signal(str)
+    hotkey_changed = Signal(str)
 
     def __init__(self, current_engine: str = EngineType.ARGOS) -> None:
         super().__init__()
@@ -153,6 +155,33 @@ class SettingsDialog(QWidget):
         self._api_check_worker: _ApiKeyCheckWorker | None = None
 
         main_layout = QVBoxLayout(self)
+
+        # --- ホットキー ---
+        hotkey_group = QGroupBox("ホットキー")
+        hotkey_layout = QHBoxLayout(hotkey_group)
+        hotkey_layout.addWidget(QLabel("翻訳キー:"))
+        self._hotkey_combo = QComboBox()
+        _hotkey_names = [
+            "Ctrl+Shift+G",
+            "Ctrl+Shift+T",
+            "Ctrl+Alt+T",
+            "F9",
+            "F10",
+        ]
+        for name in _hotkey_names:
+            self._hotkey_combo.addItem(name)
+
+        # 現在の設定を選択
+        from PySide6.QtCore import QSettings
+
+        settings = QSettings()
+        current_hotkey = str(settings.value("app/hotkey", "Ctrl+Shift+G"))
+        idx = self._hotkey_combo.findText(current_hotkey)
+        if idx >= 0:
+            self._hotkey_combo.setCurrentIndex(idx)
+
+        hotkey_layout.addWidget(self._hotkey_combo)
+        main_layout.addWidget(hotkey_group)
 
         # --- エンジン選択 ---
         engine_group = QGroupBox("翻訳エンジン")
@@ -362,12 +391,19 @@ class SettingsDialog(QWidget):
         """OK ボタン押下。設定を保存してシグナルを emit する。"""
         from PySide6.QtCore import QSettings
 
-        engine = self._get_selected_engine()
         settings = QSettings()
-        settings.setValue("translation/engine", engine)
 
+        # エンジン設定
+        engine = self._get_selected_engine()
+        settings.setValue("translation/engine", engine)
         if engine != self._current_engine:
             self.engine_changed.emit(engine)
+
+        # ホットキー設定
+        new_hotkey = self._hotkey_combo.currentText()
+        old_hotkey = str(settings.value("app/hotkey", "Ctrl+Shift+G"))
+        if new_hotkey != old_hotkey:
+            self.hotkey_changed.emit(new_hotkey)
 
         self.close()
 
