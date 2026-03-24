@@ -349,10 +349,10 @@ def _create_translator(engine_type: str) -> Any:
 
         return GeminiTranslator(api_key=load_api_key(EngineType.GEMINI) or "")
 
-    # デフォルト: Argos
-    from grabtl.core.translation.argos import ArgosTranslator
+    # デフォルト: CTranslate2 直接実行（torch 不要）
+    from grabtl.core.translation.ct2_translator import CT2Translator
 
-    return ArgosTranslator()
+    return CT2Translator()
 
 
 def _create_tray_icon() -> QIcon:

@@ -65,7 +65,7 @@ def main() -> None:
     from grabtl.core.glossary.decorator import GlossaryTranslator
     from grabtl.core.ocr.winocr_engine import WinOCREngine
     from grabtl.core.pipeline import Pipeline
-    from grabtl.core.translation.argos import ArgosTranslator
+    from grabtl.core.translation.ct2_translator import CT2Translator
 
     # キャプチャ
     print(f"キャプチャ中... ({args.x}, {args.y}) {args.width}x{args.height}")
@@ -73,7 +73,7 @@ def main() -> None:
 
     # パイプライン実行
     ocr_engine = WinOCREngine()
-    base_translator = ArgosTranslator()
+    base_translator = CT2Translator()
     glossary = Glossary.default()
     translator = GlossaryTranslator(base_translator, glossary)
     pipeline = Pipeline(ocr_engine=ocr_engine, translator=translator)
