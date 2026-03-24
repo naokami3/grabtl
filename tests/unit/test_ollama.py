@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-import json
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
-from grabtl.core.translation.ollama import (
-    OllamaConnectionError,
-    OllamaTranslator,
-)
+from grabtl.core.translation._llm_utils import clean_response
+from grabtl.core.translation.exceptions import ConnectionFailedError
+from grabtl.core.translation.ollama import OllamaTranslator
 
 
 class TestOllamaTranslator:
@@ -49,53 +48,53 @@ class TestOllamaTranslatorWithMock:
         translator = OllamaTranslator()
 
         mock_response = MagicMock()
-        mock_response.read.return_value = json.dumps({
+        mock_response.ok = True
+        mock_response.json.return_value = {
             "message": {"role": "assistant", "content": "こんにちは世界"},
             "done": True,
-        }).encode("utf-8")
-        mock_response.__enter__ = MagicMock(return_value=mock_response)
-        mock_response.__exit__ = MagicMock(return_value=False)
+        }
 
-        with patch.object(translator._opener, "open", return_value=mock_response):
+        with patch.object(translator._session, "post", return_value=mock_response):
             result = translator.translate("Hello world", "en", "ja")
 
         assert result == "こんにちは世界"
 
-    def test_Ollama未起動時にOllamaConnectionError(self) -> None:
-        import urllib.error
-
+    def test_Ollama未起動時にConnectionFailedError(self) -> None:
         translator = OllamaTranslator()
 
-        error = urllib.error.URLError(ConnectionRefusedError("Connection refused"))
         with (
-            patch.object(translator._opener, "open", side_effect=error),
-            pytest.raises(OllamaConnectionError, match="起動していません"),
+            patch.object(
+                translator._session,
+                "post",
+                side_effect=requests.exceptions.ConnectionError("Connection refused"),
+            ),
+            pytest.raises(ConnectionFailedError, match="起動していません"),
         ):
             translator.translate("Hello", "en", "ja")
 
 
 class TestCleanResponse:
     def test_プレフィックス除去(self) -> None:
-        assert OllamaTranslator._clean_response("Translation: こんにちは") == "こんにちは"
-        assert OllamaTranslator._clean_response("翻訳: こんにちは") == "こんにちは"
+        assert clean_response("Translation: こんにちは") == "こんにちは"
+        assert clean_response("翻訳: こんにちは") == "こんにちは"
 
     def test_大文字小文字を区別しない(self) -> None:
-        assert OllamaTranslator._clean_response("translation: こんにちは") == "こんにちは"
+        assert clean_response("translation: こんにちは") == "こんにちは"
 
     def test_引用符除去(self) -> None:
-        assert OllamaTranslator._clean_response('"こんにちは"') == "こんにちは"
-        assert OllamaTranslator._clean_response("「こんにちは」") == "こんにちは"
+        assert clean_response('"こんにちは"') == "こんにちは"
+        assert clean_response("「こんにちは」") == "こんにちは"
 
     def test_Note行除去(self) -> None:
         text = "こんにちは\nNote: This is a greeting"
-        assert OllamaTranslator._clean_response(text) == "こんにちは"
+        assert clean_response(text) == "こんにちは"
 
     def test_複数行のNote除去(self) -> None:
         text = "こんにちは世界\nExplanation: hello means...\nOriginal: Hello world"
-        assert OllamaTranslator._clean_response(text) == "こんにちは世界"
+        assert clean_response(text) == "こんにちは世界"
 
     def test_正常なテキストはそのまま(self) -> None:
-        assert OllamaTranslator._clean_response("こんにちは世界") == "こんにちは世界"
+        assert clean_response("こんにちは世界") == "こんにちは世界"
 
     def test_空文字列は元テキストを返す(self) -> None:
-        assert OllamaTranslator._clean_response("  ") == ""
+        assert clean_response("  ") == ""
