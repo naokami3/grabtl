@@ -16,9 +16,14 @@ grabtl/
 │       │   │   ├── __init__.py
 │       │   │   ├── base.py          # Translator Protocol
 │       │   │   ├── engines.py       # EngineType (StrEnum: argos/ollama/deepl/chatgpt/gemini)
+│       │   │   ├── exceptions.py   # 共通例外 (ConnectionFailedError, ServerError 等)
+│       │   │   ├── _http.py        # 共通 HTTP クライアント (requests Session)
+│       │   │   ├── _llm_utils.py   # LLM 共通 (clean_response, LANG_MAP, SYSTEM_PROMPT)
 │       │   │   ├── argos.py         # argostranslate 実装 (Tier 0)
 │       │   │   ├── ollama.py        # Ollama REST API 実装 (Tier 1)
-│       │   │   ├── deepl.py         # DeepL API 実装 (Tier 2, 未実装)
+│       │   │   ├── deepl.py         # DeepL API 実装 (Tier 2a)
+│       │   │   ├── chatgpt.py       # ChatGPT API 実装 (Tier 2b)
+│       │   │   ├── gemini.py        # Gemini API 実装 (Tier 2c)
 │       │   │   └── _dll_fix.py      # Windows DLL 競合回避
 │       │   ├── capture/
 │       │   │   ├── __init__.py
@@ -27,6 +32,9 @@ grabtl/
 │       │   │   ├── __init__.py
 │       │   │   ├── manager.py       # ゲーム用語辞書 (Glossary, GlossaryEntry)
 │       │   │   └── decorator.py     # GlossaryTranslator (Translator デコレータ)
+│       │   ├── security/
+│       │   │   ├── __init__.py
+│       │   │   └── keystore.py      # APIキー保存 (keyring wrapper)
 │       │   └── pipeline.py          # OCR → 翻訳パイプライン
 │       │
 │       ├── gui/                     # PySide6 デスクトップアプリ
@@ -46,7 +54,11 @@ grabtl/
 │   │   ├── test_translation.py
 │   │   ├── test_pipeline.py
 │   │   ├── test_glossary.py
-│   │   └── test_ollama.py
+│   │   ├── test_ollama.py
+│   │   ├── test_deepl.py
+│   │   ├── test_chatgpt.py
+│   │   ├── test_gemini.py
+│   │   └── test_capture.py
 │   └── integration/                 # Windows 実機テスト（CI ではスキップ）
 │       ├── test_winocr_engine.py    # ゲームチャット風画像の OCR テスト
 │       ├── test_pipeline_e2e.py     # OCR → 翻訳フルパイプライン
@@ -180,3 +192,4 @@ PyQt6 ではなく PySide6 を選定した理由:
 
 - [ADR-0001: Tier 0 翻訳エンジンの選定](adr/0001-tier0-translation-engine.md) — NLLB/FuguMT/Sugoi を評価し Opus-MT + Glossary を採用
 - [ADR-0002: 翻訳エンジンの Tier 構成](adr/0002-translation-engine-tiers.md) — Tier 0/1/2 の構成とモデル選定
+- [ADR-0003: HTTP クライアントに requests を採用](adr/0003-http-client-requests.md) — urllib.request 廃止、linter 警告への構造的対処

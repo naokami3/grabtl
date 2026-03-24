@@ -35,13 +35,17 @@ PySide6 透過オーバーレイ + マウスドラッグ範囲選択 → OCR →
 - [x] 多重起動防止 (Windows Named Mutex)
 - [x] QSettings による設定永続化
 
-### Phase 4: 設定・配布（予定）
-翻訳エンジン Tier 2、APIキー管理、ビルド・配布。
+### Phase 4: 設定・配布
+翻訳エンジン Tier 2、APIキー管理、HTTP クライアント統一、ビルド・配布。
 
-- [ ] DeepL API 実装 (Tier 2a)
-- [ ] ChatGPT API 実装 (Tier 2b)
-- [ ] Gemini API 実装 (Tier 2c)
-- [ ] APIキー管理 (keyring)
+- [x] DeepL API 実装 (Tier 2a) — 動作確認済み
+- [x] ChatGPT API 実装 (Tier 2b)
+- [x] Gemini API 実装 (Tier 2c)
+- [x] APIキー管理 (keyring → core/security/keystore.py に統一)
+- [x] HTTP クライアントを requests に統一（urllib.request 廃止、ADR-0003）
+- [x] 共通例外設計（ConnectionFailedError / ServerError / InvalidApiKeyError 等）
+- [x] LLM 共通ユーティリティ（_llm_utils.py: clean_response, LANG_MAP, SYSTEM_PROMPT）
+- [x] noqa 抑制の見直し（14→7箇所に削減、全て正当性レビュー済み）
 - [ ] ホットキーのカスタマイズ
 - [ ] カスタム用語辞書の UI 編集
 - [ ] ゲーム別辞書パック
@@ -52,7 +56,7 @@ PySide6 透過オーバーレイ + マウスドラッグ範囲選択 → OCR →
 - [ ] AV 誤検知対策（コード署名）
 
 ### 将来の検討事項
-- [ ] torch 排除（CTranslate2 で Opus-MT モデルを直接実行）
+- [ ] torch 排除（CTranslate2 で Opus-MT モデルを直接実行）← 次に対応
 - [ ] 翻訳プロセス分離（subprocess でメモリ管理改善）
 - [ ] 排他フルスクリーンゲーム対応
 - [ ] 音フィードバック（翻訳完了 SE）
