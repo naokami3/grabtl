@@ -61,6 +61,8 @@ def main() -> None:
         sys.exit(1)
 
     from grabtl.core.capture.screen import capture_region
+    from grabtl.core.glossary import Glossary
+    from grabtl.core.glossary.decorator import GlossaryTranslator
     from grabtl.core.ocr.winocr_engine import WinOCREngine
     from grabtl.core.pipeline import Pipeline
     from grabtl.core.translation.argos import ArgosTranslator
@@ -71,7 +73,9 @@ def main() -> None:
 
     # パイプライン実行
     ocr_engine = WinOCREngine()
-    translator = ArgosTranslator()
+    base_translator = ArgosTranslator()
+    glossary = Glossary.default()
+    translator = GlossaryTranslator(base_translator, glossary)
     pipeline = Pipeline(ocr_engine=ocr_engine, translator=translator)
 
     result = pipeline.run(image, source_lang=args.source, target_lang=args.target)

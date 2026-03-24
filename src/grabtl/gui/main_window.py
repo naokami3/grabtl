@@ -155,11 +155,15 @@ class TrayApp:
 
             def run(self) -> None:
                 try:
+                    from grabtl.core.glossary import Glossary
+                    from grabtl.core.glossary.decorator import GlossaryTranslator
                     from grabtl.core.ocr.winocr_engine import WinOCREngine
                     from grabtl.core.translation.argos import ArgosTranslator
 
                     ocr = WinOCREngine()
-                    translator = ArgosTranslator()
+                    base_translator = ArgosTranslator()
+                    glossary = Glossary.default()
+                    translator = GlossaryTranslator(base_translator, glossary)
                     self.done.emit(ocr, translator)
                 except Exception as e:
                     self.init_error.emit(str(e))
