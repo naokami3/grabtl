@@ -24,7 +24,9 @@ grabtl/
 │       │   │   ├── deepl.py         # DeepL API 実装 (Tier 2a)
 │       │   │   ├── chatgpt.py       # ChatGPT API 実装 (Tier 2b)
 │       │   │   ├── gemini.py        # Gemini API 実装 (Tier 2c)
-│       │   │   └── _dll_fix.py      # Windows DLL 競合回避
+│       │   │   ├── ct2_translator.py # CTranslate2 直接実行 (torch 不要)
+│       │   │   ├── cache.py         # 翻訳キャッシュ (CachedTranslator デコレータ)
+│       │   │   └── _dll_fix.py      # Windows DLL 競合回避 (レガシー)
 │       │   ├── capture/
 │       │   │   ├── __init__.py
 │       │   │   └── screen.py        # mss スクリーンキャプチャ
@@ -193,3 +195,4 @@ PyQt6 ではなく PySide6 を選定した理由:
 - [ADR-0001: Tier 0 翻訳エンジンの選定](adr/0001-tier0-translation-engine.md) — NLLB/FuguMT/Sugoi を評価し Opus-MT + Glossary を採用
 - [ADR-0002: 翻訳エンジンの Tier 構成](adr/0002-translation-engine-tiers.md) — Tier 0/1/2 の構成とモデル選定
 - [ADR-0003: HTTP クライアントに requests を採用](adr/0003-http-client-requests.md) — urllib.request 廃止、linter 警告への構造的対処
+- [ADR-0004: CTranslate2 直接利用による torch 排除](adr/0004-ct2-direct-translation.md) — メモリ 200-500MB 削減、DLL 競合解消

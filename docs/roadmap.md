@@ -46,17 +46,18 @@ PySide6 透過オーバーレイ + マウスドラッグ範囲選択 → OCR →
 - [x] 共通例外設計（ConnectionFailedError / ServerError / InvalidApiKeyError 等）
 - [x] LLM 共通ユーティリティ（_llm_utils.py: clean_response, LANG_MAP, SYSTEM_PROMPT）
 - [x] noqa 抑制の見直し（14→7箇所に削減、全て正当性レビュー済み）
-- [ ] ホットキーのカスタマイズ
+- [x] ホットキーのカスタマイズ（5プリセット、設定ダイアログで変更）
+- [x] 翻訳キャッシュ（LRU 500エントリ、CachedTranslator デコレータ）
+- [x] 初回オンボーディングガイド（バルーン通知 + ドラッグヒント）
+- [x] torch 排除（CTranslate2 + SentencePiece + pysbd で直接実行、ADR-0004）
+- [x] メモリ最適化（PNG 往復排除、CT2 遅延アンロード、pysbd キャッシュ）
 - [ ] カスタム用語辞書の UI 編集
 - [ ] ゲーム別辞書パック
 - [ ] 翻訳履歴
-- [ ] 翻訳キャッシュ（同一テキストの再翻訳回避）
-- [ ] 初回オンボーディングガイド
 - [ ] Nuitka ビルド + Inno Setup
 - [ ] AV 誤検知対策（コード署名）
 
 ### 将来の検討事項
-- [ ] torch 排除（CTranslate2 で Opus-MT モデルを直接実行）← 次に対応
 - [ ] 翻訳プロセス分離（subprocess でメモリ管理改善）
 - [ ] 排他フルスクリーンゲーム対応
 - [ ] 音フィードバック（翻訳完了 SE）

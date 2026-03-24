@@ -1,7 +1,7 @@
 # CLAUDE.md — grabtl
 
 ゲーム内チャットをドラッグ選択で翻訳する Windows デスクトップアプリ。
-Python 3.11+ / winocr / argostranslate / Ollama / PySide6。
+Python 3.11+ / winocr / CTranslate2 / Ollama / PySide6。
 
 ## コマンド
 
@@ -26,16 +26,17 @@ Python 3.11+ / winocr / argostranslate / Ollama / PySide6。
 4. **OCR / 翻訳エンジンは Protocol で定義** — `core/ocr/base.py` / `core/translation/base.py`
 5. **設定は `core/` では dict / dataclass で受け取る** — GUI 層が QSettings ↔ dict 変換を担当
 6. **キャプチャ画像はメモリ上でのみ処理** — ディスクに保存しない
-7. **APIキーは `keyring` で保存** — 平文保存禁止、ログ出力時はマスク（`sk-...xxxx`）
+7. **APIキーは `core/security/keystore.py` 経由で保存** — 平文保存禁止、ログ出力時はマスク
 8. **Ollama 接続先は `127.0.0.1` にハードコード** — `0.0.0.0` にしない
 9. **DirectX フック等のゲームプロセス介入機能は実装しない**
 10. **PyQt6 ではなく PySide6 を使用** — ライセンス互換性のため（GPL vs LGPL）
 
 ## 既知の落とし穴
 
-- **WinRT/torch DLL 競合**: エントリポイントの最初に `preload_system_vcrt()` を呼ぶ。詳細は `core/translation/_dll_fix.py`
+- **HTTP クライアントは requests を使う**: `urllib.request` は使わない。[ADR-0003](docs/adr/0003-http-client-requests.md)
+- **Tier 0 は CTranslate2 直接実行**: argostranslate / torch は不要。[ADR-0004](docs/adr/0004-ct2-direct-translation.md)
+- **WinRT/torch DLL 競合**: argostranslate を使う場合のみ `preload_system_vcrt()` が必要。CT2Translator では不要
 - **Windows OCR 言語パック**: winocr は OS レベルの OCR 言語パックに依存。英語 OCR が未インストールの場合がある
-- **HTTP クライアントは requests を使う**: `urllib.request` は使わない。ruff S310 が発火し、`noqa` で抑制すると linter の意味が失われる。詳細は [ADR-0003](docs/adr/0003-http-client-requests.md)
 - **Ollama のプロキシバイパス**: localhost 通信には `session.trust_env = False` でプロキシを無効化
 - **Qt の camelCase メソッド**: `paintEvent` 等の Qt override は ruff N802 を `gui/**` で除外設定済み
 - **linter の警告は `noqa` で抑制する前に構造的な解決を検討する**: `noqa` は誤検知の場合のみ使う
