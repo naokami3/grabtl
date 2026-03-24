@@ -64,8 +64,3 @@ def clean_response(raw: str) -> str:
     return text if text else raw.strip()
 
 
-def mask_api_key(key: str) -> str:
-    """API キーをマスク表示する。"""
-    if len(key) <= 8:
-        return "****"
-    return key[:4] + "..." + key[-4:]

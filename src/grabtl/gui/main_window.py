@@ -321,11 +321,31 @@ class TrayApp:
 
 
 def _create_translator(engine_type: str) -> Any:
-    """エンジン種別に応じた Translator を生成する。"""
+    """エンジン種別に応じた Translator を生成する。
+
+    Tier 2 エンジンは keystore から API キーを読み込む。
+    """
+    from grabtl.core.security.keystore import load_api_key
+
     if engine_type == EngineType.OLLAMA:
         from grabtl.core.translation.ollama import OllamaTranslator
 
         return OllamaTranslator()
+
+    if engine_type == EngineType.DEEPL:
+        from grabtl.core.translation.deepl import DeepLTranslator
+
+        return DeepLTranslator(api_key=load_api_key(EngineType.DEEPL) or "")
+
+    if engine_type == EngineType.CHATGPT:
+        from grabtl.core.translation.chatgpt import ChatGPTTranslator
+
+        return ChatGPTTranslator(api_key=load_api_key(EngineType.CHATGPT) or "")
+
+    if engine_type == EngineType.GEMINI:
+        from grabtl.core.translation.gemini import GeminiTranslator
+
+        return GeminiTranslator(api_key=load_api_key(EngineType.GEMINI) or "")
 
     # デフォルト: Argos
     from grabtl.core.translation.argos import ArgosTranslator
