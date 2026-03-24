@@ -12,8 +12,10 @@ from PySide6.QtCore import QByteArray, QRect, QThread, QTimer, Signal
 from PySide6.QtGui import QAction, QIcon, QPixmap
 from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
+from grabtl.core.translation.engines import EngineType
 from grabtl.gui.overlay import ResultOverlay
 from grabtl.gui.region_selector import RegionSelector
+from grabtl.gui.settings_dialog import SettingsDialog
 
 # Win32 定数
 _WM_HOTKEY = 0x0312
@@ -117,6 +119,9 @@ class TrayApp:
         translate_action = QAction("翻訳する (Ctrl+Shift+G)", menu)
         translate_action.triggered.connect(self._activate_selection)
         menu.addAction(translate_action)
+        settings_action = QAction("設定...", menu)
+        settings_action.triggered.connect(self._show_settings)
+        menu.addAction(settings_action)
         menu.addSeparator()
         quit_action = QAction("終了", menu)
         quit_action.triggered.connect(self._quit)
@@ -135,40 +140,58 @@ class TrayApp:
         self._logical_rect = QRect()   # オーバーレイ表示位置用（論理座標）
         self._physical_rect = QRect()  # キャプチャ用（物理ピクセル座標）
 
+        # 設定ダイアログ（多重起動防止用の参照）
+        self._settings_dialog: SettingsDialog | None = None
+
         # パイプラインのエンジン（バックグラウンドで初期化）
         self._ocr_engine: Any = None
         self._translator: Any = None
         self._engines_ready = False
-        self._init_engines()
+        self._current_engine = self._load_engine_setting()
+        self._init_engines(self._current_engine)
 
         # グローバルホットキー登録
         self._hotkey_filter = HotkeyFilter(self._activate_selection)
         self._hotkey_filter.install(app)
         self._register_hotkey()
 
-    def _init_engines(self) -> None:
+    @staticmethod
+    def _load_engine_setting() -> str:
+        """QSettings から保存済みのエンジン設定を読み込む。"""
+        from PySide6.QtCore import QSettings
+
+        settings = QSettings()
+        engine = settings.value("translation/engine", EngineType.ARGOS)
+        return str(engine)
+
+    def _init_engines(self, engine_type: str = EngineType.ARGOS) -> None:
         """OCR/翻訳エンジンをバックグラウンドで初期化する。"""
+        self._engines_ready = False
+        self._tray.setToolTip("grabtl — エンジン初期化中...")
 
         class _InitWorker(QThread):
             done = Signal(object, object)
             init_error = Signal(str)
+
+            def __init__(self, engine: str) -> None:
+                super().__init__()
+                self._engine = engine
 
             def run(self) -> None:
                 try:
                     from grabtl.core.glossary import Glossary
                     from grabtl.core.glossary.decorator import GlossaryTranslator
                     from grabtl.core.ocr.winocr_engine import WinOCREngine
-                    from grabtl.core.translation.argos import ArgosTranslator
 
                     ocr = WinOCREngine()
-                    base_translator = ArgosTranslator()
+                    base_translator = _create_translator(self._engine)
                     glossary = Glossary.default()
                     translator = GlossaryTranslator(base_translator, glossary)
                     self.done.emit(ocr, translator)
                 except Exception as e:
                     self.init_error.emit(str(e))
 
-        self._init_worker = _InitWorker()
+        self._init_worker = _InitWorker(engine_type)
         self._init_worker.done.connect(self._on_engines_ready)
         self._init_worker.init_error.connect(self._on_engine_error)
         self._init_worker.start()
@@ -268,7 +291,26 @@ class TrayApp:
 
     def _on_selection_cancelled(self) -> None:
         """選択がキャンセルされた。"""
-        pass
+
+    def _show_settings(self) -> None:
+        """設定ダイアログを表示する。"""
+        if self._settings_dialog is not None:
+            self._settings_dialog.raise_()
+            self._settings_dialog.activateWindow()
+            return
+        self._settings_dialog = SettingsDialog(current_engine=self._current_engine)
+        self._settings_dialog.engine_changed.connect(self._on_engine_changed)
+        self._settings_dialog.destroyed.connect(self._on_settings_closed)
+        self._settings_dialog.show()
+
+    def _on_engine_changed(self, engine: str) -> None:
+        """エンジンが変更された。再初期化する。"""
+        self._current_engine = engine
+        self._init_engines(engine)
+
+    def _on_settings_closed(self) -> None:
+        """設定ダイアログが閉じられた。"""
+        self._settings_dialog = None
 
     def _quit(self) -> None:
         """アプリを終了する。"""
@@ -276,6 +318,19 @@ class TrayApp:
         self._result_overlay.dismiss()
         self._tray.hide()
         self._app.quit()
+
+
+def _create_translator(engine_type: str) -> Any:
+    """エンジン種別に応じた Translator を生成する。"""
+    if engine_type == EngineType.OLLAMA:
+        from grabtl.core.translation.ollama import OllamaTranslator
+
+        return OllamaTranslator()
+
+    # デフォルト: Argos
+    from grabtl.core.translation.argos import ArgosTranslator
+
+    return ArgosTranslator()
 
 
 def _create_tray_icon() -> QIcon:
@@ -300,8 +355,25 @@ def _create_tray_icon() -> QIcon:
     return QIcon(pixmap)
 
 
+def _acquire_single_instance_lock() -> bool:
+    """多重起動を防止する。既に起動中なら False を返す。"""
+    if sys.platform != "win32":
+        return True
+    # Windows Named Mutex で排他制御
+    _MUTEX_NAME = "grabtl_single_instance"  # noqa: N806
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.CreateMutexW(None, False, _MUTEX_NAME)
+    # ERROR_ALREADY_EXISTS (183) なら既に別インスタンスが起動中
+    return ctypes.get_last_error() != 183  # noqa: PLR2004
+
+
 def main() -> None:
     """GUI のメインエントリポイント。"""
+    # 多重起動防止
+    if not _acquire_single_instance_lock():
+        print("grabtl は既に起動しています。", file=sys.stderr)
+        sys.exit(0)
+
     # stdout を UTF-8 に設定（ログ出力用）
     if sys.stdout and sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
         sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
@@ -314,6 +386,8 @@ def main() -> None:
     preload_system_vcrt()
 
     app = QApplication(sys.argv)
+    app.setOrganizationName("grabtl")
+    app.setApplicationName("grabtl")
     app.setQuitOnLastWindowClosed(False)  # トレイ常駐のため
 
     _tray_app = TrayApp(app)  # noqa: F841 (参照を保持)
