@@ -2,15 +2,12 @@
 
 ## CI/CD
 
-### PR ごと
+### PR ごと / main push
 - `ruff check` + `ruff format --check`
 - `mypy --strict src/`
-- `pytest tests/unit/`
-- 通信先テスト: テスト中に許可リスト外ドメインへ通信したら fail
-
-### 週次
+- `pytest --cov=src/grabtl`（全テスト + カバレッジ）
 - `pip-audit`（依存パッケージの脆弱性スキャン）
-- `pip-licenses`（ライセンス互換性チェック）
+- 通信先テスト: テスト中に許可リスト外ドメインへ通信したら fail
 
 ### リリース時（タグ push）
 - Nuitka ビルド → Inno Setup → GitHub Releases に自動アップロード
@@ -24,6 +21,7 @@
 - [Nuitka](https://nuitka.net/)（`pip install nuitka`）
 - [Inno Setup 6](https://jrsoftware.org/ispack.php)（インストーラー生成用）
 - C コンパイラ（Visual Studio Build Tools の cl.exe）
+- 翻訳モデル（`~/.local/share/argos-translate/packages/en_ja`）— 未インストールの場合 build.py が WARNING を出すが、ビルド自体は完了する
 
 ### 手順
 
@@ -33,6 +31,8 @@
 
 | ファイル | 変更箇所 |
 |---|---|
+| `pyproject.toml` | `version` |
+| `src/grabtl/__init__.py` | `__version__` |
 | `build.py` | `--windows-file-version` / `--windows-product-version` |
 | `installer.iss` | `AppVersion` / `OutputBaseFilename` |
 
@@ -47,6 +47,10 @@ python build.py
 #### 3. インストーラーを生成（Inno Setup）
 
 ```bash
+# ISCC.exe が PATH に入っている場合
+iscc installer.iss
+
+# フルパス指定（デフォルトのインストール先）
 "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
 ```
 
