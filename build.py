@@ -46,8 +46,8 @@ _NUITKA_ARGS = [
     # Windows メタデータ
     "--windows-company-name=grabtl",
     "--windows-product-name=grabtl",
-    "--windows-file-version=0.1.0.0",
-    "--windows-product-version=0.1.0.0",
+    "--windows-file-version=0.1.1.0",
+    "--windows-product-version=0.1.1.0",
     '--windows-file-description=Game Chat Translator',
     f"--windows-icon-from-ico={_PROJECT_ROOT / 'assets' / 'grabtl.ico'}",
     # エントリポイント

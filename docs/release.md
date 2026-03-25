@@ -2,20 +2,70 @@
 
 ## CI/CD
 
-### PR ごと
+### PR ごと / main push
 - `ruff check` + `ruff format --check`
 - `mypy --strict src/`
-- `pytest tests/unit/`
-- 通信先テスト: テスト中に許可リスト外ドメインへ通信したら fail
-
-### 週次
+- `pytest --cov=src/grabtl`（全テスト + カバレッジ）
 - `pip-audit`（依存パッケージの脆弱性スキャン）
-- `pip-licenses`（ライセンス互換性チェック）
+- 通信先テスト: テスト中に許可リスト外ドメインへ通信したら fail
 
 ### リリース時（タグ push）
 - Nuitka ビルド → Inno Setup → GitHub Releases に自動アップロード
 - SHA256 ハッシュをリリースノートに記載
 - VirusTotal API スキャン結果を添付
+
+## ローカルビルド手順
+
+### 前提条件
+- Python 3.11+（開発環境セットアップ済み）
+- [Nuitka](https://nuitka.net/)（`pip install nuitka`）
+- [Inno Setup 6](https://jrsoftware.org/ispack.php)（インストーラー生成用）
+- C コンパイラ（Visual Studio Build Tools の cl.exe）
+- 翻訳モデル（`~/.local/share/argos-translate/packages/en_ja`）— 未インストールの場合 build.py が WARNING を出すが、ビルド自体は完了する
+
+### 手順
+
+#### 1. バージョン番号を更新
+
+以下のファイルのバージョンを揃える:
+
+| ファイル | 変更箇所 |
+|---|---|
+| `pyproject.toml` | `version` |
+| `src/grabtl/__init__.py` | `__version__` |
+| `build.py` | `--windows-file-version` / `--windows-product-version` |
+| `installer.iss` | `AppVersion` / `OutputBaseFilename` |
+
+#### 2. exe をビルド（Nuitka）
+
+```bash
+python build.py
+```
+
+出力先: `build/release/build_entry.dist/grabtl.exe`
+
+#### 3. インストーラーを生成（Inno Setup）
+
+```bash
+# ISCC.exe が PATH に入っている場合
+iscc installer.iss
+
+# フルパス指定（デフォルトのインストール先）
+"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+```
+
+出力先: `build/installer/grabtl-<version>-setup.exe`
+
+#### 4. タグを作成・push
+
+```bash
+git tag -a v<version> -m "v<version> — リリースノート"
+git push origin v<version>
+```
+
+#### 5. 旧バージョンのインストーラーを削除
+
+`build/installer/` 内の古い setup.exe を削除する。
 
 ## AV 誤検知対策
 
