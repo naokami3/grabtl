@@ -11,6 +11,7 @@ Python 3.11+ / winocr / CTranslate2 / Ollama / PySide6。
 - `pytest tests/ -v` — テスト実行（unit + integration）
 - `pip install -e ".[all,dev]"` — 開発環境セットアップ
 - `python -m grabtl.gui.main_window` — GUI 起動
+- `python build.py` — Nuitka ビルド（exe + モデル同梱）
 
 ## コーディング規約
 
@@ -40,6 +41,8 @@ Python 3.11+ / winocr / CTranslate2 / Ollama / PySide6。
 - **Ollama のプロキシバイパス**: localhost 通信には `session.trust_env = False` でプロキシを無効化
 - **Qt の camelCase メソッド**: `paintEvent` 等の Qt override は ruff N802 を `gui/**` で除外設定済み
 - **linter の警告は `noqa` で抑制する前に構造的な解決を検討する**: `noqa` は誤検知の場合のみ使う
+- **main ブランチは保護済み**: 直接 push 不可。ブランチを切って PR → CI パス → マージ
+- **CI ジョブ名は英語**: GitHub の Required status checks が日本語名を検索できない問題を回避
 
 ## 関連ドキュメント
 
