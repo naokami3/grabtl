@@ -506,14 +506,14 @@ class SettingsDialog(QWidget):
 
     def _open_powershell(self) -> None:
         """PowerShell を新しいウィンドウで開く。"""
-        ps_path = shutil.which("powershell")
+        ps_path = shutil.which("pwsh") or shutil.which("powershell")
         if ps_path is None:
             self._ollama_status.setText("ステータス: ❌ PowerShell が見つかりません")
             self._ollama_status.setStyleSheet("color: red;")
             return
         subprocess.Popen(  # noqa: S603
             [ps_path, "-NoExit"],
-            creationflags=subprocess.CREATE_NEW_CONSOLE,
+            creationflags=subprocess.CREATE_NEW_CONSOLE,  # type: ignore[attr-defined]
         )
 
     def _copy_to_clipboard(self, text: str) -> None:
