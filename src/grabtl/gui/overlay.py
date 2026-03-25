@@ -41,7 +41,6 @@ class ResultOverlay(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating, False)
         self.setMaximumWidth(_MAX_WIDTH)
-        self.setMaximumHeight(_MAX_HEIGHT)
 
         # メインレイアウト
         layout = QVBoxLayout(self)
@@ -156,9 +155,13 @@ class ResultOverlay(QWidget):
 
     def _position_near(self, near_rect: QRect) -> None:
         """選択領域の上方向にオーバーレイを配置する。"""
-        self.adjustSize()
-        overlay_h = min(self.sizeHint().height(), _MAX_HEIGHT)
-        overlay_w = min(self.sizeHint().width(), _MAX_WIDTH)
+        # コンテンツの実際の高さを計算
+        content_h = self._translation_label.sizeHint().height() + _PADDING * 2 + 12
+        if self._status_label.isVisible():
+            content_h = self._status_label.sizeHint().height() + _PADDING * 2 + 12
+        overlay_h = min(content_h, _MAX_HEIGHT)
+        content_w = self._translation_label.sizeHint().width() + _PADDING * 2
+        overlay_w = min(max(content_w, 200), _MAX_WIDTH)
 
         # 選択領域の上に配置
         x = near_rect.x() + (near_rect.width() - overlay_w) // 2
