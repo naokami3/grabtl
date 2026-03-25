@@ -60,6 +60,8 @@ grabtl/
 │   │   ├── test_deepl.py
 │   │   ├── test_chatgpt.py
 │   │   ├── test_gemini.py
+│   │   ├── test_ct2_translator.py
+│   │   ├── test_cache.py
 │   │   └── test_capture.py
 │   └── integration/                 # Windows 実機テスト（CI ではスキップ）
 │       ├── test_winocr_engine.py    # ゲームチャット風画像の OCR テスト
@@ -73,7 +75,16 @@ grabtl/
 │   ├── release.md                   # リリース・CI/CD
 │   └── adr/                         # Architecture Decision Records
 │       ├── 0001-tier0-translation-engine.md
-│       └── 0002-translation-engine-tiers.md
+│       ├── 0002-translation-engine-tiers.md
+│       ├── 0003-http-client-requests.md
+│       └── 0004-ct2-direct-translation.md
+│
+├── assets/
+│   └── grabtl.ico                   # アプリアイコン (16/32/48/256px)
+│
+├── build_entry.py                   # Nuitka ビルド用ランチャー
+├── build.py                         # ビルドスクリプト（Nuitka + モデルコピー）
+├── installer.iss                    # Inno Setup インストーラー定義
 │
 └── .claude/
     └── settings.json                # Claude Code hooks（コミット前チェック）

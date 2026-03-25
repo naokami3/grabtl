@@ -35,7 +35,7 @@ PySide6 透過オーバーレイ + マウスドラッグ範囲選択 → OCR →
 - [x] 多重起動防止 (Windows Named Mutex)
 - [x] QSettings による設定永続化
 
-### Phase 4: 設定・配布
+### Phase 4: 設定・配布 ✅
 翻訳エンジン Tier 2、APIキー管理、HTTP クライアント統一、ビルド・配布。
 
 - [x] DeepL API 実装 (Tier 2a) — 動作確認済み
@@ -51,11 +51,19 @@ PySide6 透過オーバーレイ + マウスドラッグ範囲選択 → OCR →
 - [x] 初回オンボーディングガイド（バルーン通知 + ドラッグヒント）
 - [x] torch 排除（CTranslate2 + SentencePiece + pysbd で直接実行、ADR-0004）
 - [x] メモリ最適化（PNG 往復排除、CT2 遅延アンロード、pysbd キャッシュ）
+- [x] Nuitka ビルド + Inno Setup（v0.1.0 リリース済み）
+- [x] アプリアイコン（exe / インストーラー / トレイ）
+- [x] 翻訳結果の表示改善（原文非表示、スクロール対応）
+- [x] CI 修正（PySide6 インストール、ジョブ名英語化、pygments CVE 一時除外）
+- [x] main ブランチ保護（PR 必須、CI パス必須）
+
+### Phase 5: 今後の改善（予定）
+
 - [ ] カスタム用語辞書の UI 編集
 - [ ] ゲーム別辞書パック
 - [ ] 翻訳履歴
-- [ ] Nuitka ビルド + Inno Setup
-- [ ] AV 誤検知対策（コード署名）
+- [ ] AV 誤検知対策（コード署名 — Certum Open Source 証明書）
+- [ ] GitHub Actions でのリリース自動化（タグ push → ビルド → Releases アップロード）
 
 ### 将来の検討事項
 - [ ] 翻訳プロセス分離（subprocess でメモリ管理改善）
@@ -80,5 +88,5 @@ PySide6 透過オーバーレイ + マウスドラッグ範囲選択 → OCR →
 ### v1.0.0 までに整備
 - [x] CODE_OF_CONDUCT.md（Contributor Covenant）— 前倒しで作成済み
 - [x] CHANGELOG.md（Keep a Changelog 形式、SemVer 準拠）— 前倒しで作成済み
-- [x] docs/adr/（Architecture Decision Records）— ADR-0001, ADR-0002 作成済み
+- [x] docs/adr/（Architecture Decision Records）— ADR-0001〜0004 作成済み
 - [ ] docs/plugin-guide.md の実装に合わせた更新
