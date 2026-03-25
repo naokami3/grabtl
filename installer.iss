@@ -3,13 +3,13 @@
 
 [Setup]
 AppName=grabtl
-AppVersion=0.1.0
+AppVersion=0.1.1
 AppPublisher=grabtl
 AppPublisherURL=https://github.com/naokami3/grabtl
 DefaultDirName={userappdata}\grabtl
 DefaultGroupName=grabtl
 OutputDir=build\installer
-OutputBaseFilename=grabtl-0.1.0-setup
+OutputBaseFilename=grabtl-0.1.1-setup
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 SetupIconFile=assets\grabtl.ico

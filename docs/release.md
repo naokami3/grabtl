@@ -17,6 +17,52 @@
 - SHA256 ハッシュをリリースノートに記載
 - VirusTotal API スキャン結果を添付
 
+## ローカルビルド手順
+
+### 前提条件
+- Python 3.11+（開発環境セットアップ済み）
+- [Nuitka](https://nuitka.net/)（`pip install nuitka`）
+- [Inno Setup 6](https://jrsoftware.org/ispack.php)（インストーラー生成用）
+- C コンパイラ（Visual Studio Build Tools の cl.exe）
+
+### 手順
+
+#### 1. バージョン番号を更新
+
+以下のファイルのバージョンを揃える:
+
+| ファイル | 変更箇所 |
+|---|---|
+| `build.py` | `--windows-file-version` / `--windows-product-version` |
+| `installer.iss` | `AppVersion` / `OutputBaseFilename` |
+
+#### 2. exe をビルド（Nuitka）
+
+```bash
+python build.py
+```
+
+出力先: `build/release/build_entry.dist/grabtl.exe`
+
+#### 3. インストーラーを生成（Inno Setup）
+
+```bash
+"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+```
+
+出力先: `build/installer/grabtl-<version>-setup.exe`
+
+#### 4. タグを作成・push
+
+```bash
+git tag -a v<version> -m "v<version> — リリースノート"
+git push origin v<version>
+```
+
+#### 5. 旧バージョンのインストーラーを削除
+
+`build/installer/` 内の古い setup.exe を削除する。
+
 ## AV 誤検知対策
 
 PyInstaller --onefile は使わない（誤検知率最高）。
