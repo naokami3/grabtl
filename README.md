@@ -6,64 +6,74 @@
 
 ## What is this?
 
-A desktop tool for translating in-game chat by dragging to select text areas on screen. Unlike existing tools (RSTGameTranslation, Translumo) that auto-translate a fixed region, this tool lets you **translate on demand** — select exactly what you want, when you want.
+A desktop tool for translating in-game chat and quest text by dragging to select text areas on screen. Unlike existing tools (RSTGameTranslation, Translumo) that auto-translate a fixed region, this tool lets you **translate on demand** — select exactly what you want, when you want.
 
 **Key differences from existing tools:**
 - **On-demand drag-to-translate** instead of fixed-region auto-capture
-- **Bidirectional chat support** — not just reading, but also composing replies
 - **Works without API keys** — fully offline translation out of the box
+- **Game glossary** auto-corrects terms (GG → お疲れ様, raid → レイド)
 - **Japanese-first** UI and documentation
 
-## Quick Start (as a library)
+## Usage
 
-```python
-from grabtl.core.ocr.winocr_engine import WinOCREngine
-from grabtl.core.translation.argos import ArgosTranslator
-from grabtl.core.pipeline import TranslationPipeline
+### 1. Install
 
-pipeline = TranslationPipeline(
-    ocr=WinOCREngine(),
-    translator=ArgosTranslator(source="en", target="ja"),
-)
+Download `grabtl-0.1.0-setup.exe` from [GitHub Releases](https://github.com/naokami3/grabtl/releases). No admin privileges required.
 
-result = pipeline.translate_image(screenshot_bytes)
-print(result.translated_text)  # "レイド メンバー募集中"
-```
+### 2. Translate
 
-## Installation
+1. Launch grabtl — a blue "G" icon appears in the system tray
+2. Press **Ctrl+Shift+G** to activate translation mode (screen dims)
+3. **Drag to select** the text you want to translate
+4. OCR + translation results appear near the selection
+5. Click outside the result to dismiss
 
-### Desktop App (recommended for end users)
-Download the installer from [GitHub Releases](https://github.com/<owner>/grabtl/releases).
+### 3. Change Settings
 
-### As a Python library
-```bash
-# Core only (no GUI)
-pip install grabtl[ocr-windows,translate-local]
+Right-click the tray icon → **"Settings..."** to change translation engine or hotkey.
 
-# Full install with GUI
-pip install grabtl[all]
-```
+## Translation Engines
 
-## Translation Modes
+| Engine | Description | Setup |
+|--------|-------------|-------|
+| **Machine Translation** (default) | Offline. No API key needed | None |
+| **AI Translation (Ollama)** | High-quality local AI | Install [Ollama](https://ollama.com) |
+| **DeepL API** | Best translation quality | Enter [DeepL](https://www.deepl.com) API key |
+| **ChatGPT API** | OpenAI translation | Enter [OpenAI](https://platform.openai.com) API key |
+| **Gemini API** | Google translation | Enter [Google AI Studio](https://aistudio.google.com) API key |
 
-| Mode | API Key | Network | Quality | Setup |
-|------|---------|---------|---------|-------|
-| **Tier 0: Local** (default) | Not required | None | ★★★ | Zero config |
-| **Tier 1: Ollama** | Not required | localhost | ★★★★ | Install Ollama |
-| **Tier 2: Cloud API** | Your own key | HTTPS | ★★★★★ | Enter API key |
+### Setting Up AI Translation (Ollama)
+
+1. Install Ollama from [ollama.com](https://ollama.com/download)
+2. Run `ollama pull qwen2.5:3b` in terminal (~2GB download)
+3. In grabtl settings → select "AI Translation (Ollama)" → test connection
+
+### Setting Up API Translation
+
+1. In grabtl settings → select your preferred engine
+2. Click "Open Console" to get an API key
+3. Enter the key → "Test and Save"
+
+## Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| **Ctrl+Shift+G** | Start translation mode (customizable in settings) |
+| **Esc** | Cancel selection / dismiss result |
+| Right-click | Cancel selection |
+
+Hotkey can be changed in tray icon → Settings (Ctrl+Shift+T, Ctrl+Alt+T, F9, F10, etc.).
+
+## System Requirements
+
+- Windows 10 / 11 (64-bit)
+- Games should run in **borderless windowed mode** (exclusive fullscreen is not supported)
 
 ## Security
 
-We follow the principle of **transparent security**. See [docs/security-design.md](docs/security-design.md) for our full security architecture, including known limitations.
-
-**Key points:**
 - API keys are stored using OS-native encryption (Windows DPAPI) — same method as VS Code and Chrome
-- Communication log lets you inspect exactly what data is sent to translation providers
-- Tier 0 mode has zero network traffic and zero API keys
-
-## Adding New Engines
-
-grabtl uses a plugin architecture. See [docs/plugin-guide.md](docs/plugin-guide.md) for how to add OCR or translation engines.
+- Machine Translation mode has zero network traffic and zero API keys
+- See [docs/security-design.md](docs/security-design.md) for details
 
 ## Disclaimer
 

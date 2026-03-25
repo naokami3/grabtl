@@ -6,75 +6,87 @@
 
 ## これは何？
 
-ゲーム画面上のチャットをドラッグで範囲選択して翻訳するデスクトップツールです。既存ツール（RSTGameTranslation, Translumo 等）が固定領域を自動翻訳するのに対し、このツールは**必要なときに必要な部分だけ**を翻訳します。
+ゲーム画面上のチャットやクエスト本文をドラッグで範囲選択して翻訳するデスクトップツールです。既存ツール（RSTGameTranslation, Translumo 等）が固定領域を自動翻訳するのに対し、このツールは**必要なときに必要な部分だけ**を翻訳します。
 
 **既存ツールとの違い:**
 - 固定領域ではなく**都度ドラッグで翻訳**
-- 読むだけでなく**返信の翻訳（日→英）も支援**
 - **APIキー不要**でそのまま使える（オフライン翻訳同梱）
+- **ゲーム用語辞書**で「GG → お疲れ様」「raid → レイド」など自動補正
 - **日本語ファースト**の UI とドキュメント
 
-## クイックスタート（ライブラリとして）
+## 使い方
 
-```python
-from grabtl.core.ocr.winocr_engine import WinOCREngine
-from grabtl.core.translation.argos import ArgosTranslator
-from grabtl.core.pipeline import TranslationPipeline
+### 1. インストール
 
-pipeline = TranslationPipeline(
-    ocr=WinOCREngine(),
-    translator=ArgosTranslator(source="en", target="ja"),
-)
+[GitHub Releases](https://github.com/naokami3/grabtl/releases) から `grabtl-0.1.0-setup.exe` をダウンロードして実行してください。管理者権限は不要です。
 
-result = pipeline.translate_image(screenshot_bytes)
-print(result.translated_text)  # "レイド メンバー募集中"
-```
+### 2. 翻訳する
 
-## インストール
+1. grabtl を起動するとシステムトレイ（タスクバー右側）に青い「G」アイコンが表示されます
+2. **Ctrl+Shift+G** を押すと画面が薄暗くなります
+3. 翻訳したいテキストを**マウスでドラッグして選択**します
+4. 選択した部分が OCR → 翻訳され、結果が表示されます
+5. 翻訳結果の外をクリックすると消えます
 
-### デスクトップアプリ（一般ユーザー向け）
-[GitHub Releases](https://github.com/<owner>/grabtl/releases) からインストーラーをダウンロード。
+### 3. 設定を変更する
 
-### Python ライブラリとして
-```bash
-# コアのみ（GUI なし）
-pip install grabtl[ocr-windows,translate-local]
+トレイアイコンを右クリック → **「設定...」** から翻訳エンジンやホットキーを変更できます。
 
-# フルインストール（GUI 含む）
-pip install grabtl[all]
-```
+## 翻訳エンジン
 
-## 翻訳モード
+| エンジン | 説明 | セットアップ |
+|---------|------|------------|
+| **機械翻訳**（デフォルト）| オフライン。APIキー不要で即使える | 不要 |
+| **AI翻訳（Ollama）** | ローカル AI で高品質翻訳 | [Ollama](https://ollama.com) をインストール |
+| **DeepL API** | 最高品質の翻訳サービス | [DeepL](https://www.deepl.com) の API キーを入力 |
+| **ChatGPT API** | OpenAI の翻訳 | [OpenAI](https://platform.openai.com) の API キーを入力 |
+| **Gemini API** | Google の翻訳 | [Google AI Studio](https://aistudio.google.com) の API キーを入力 |
 
-| モード | APIキー | 通信 | 品質 | セットアップ |
-|--------|---------|------|------|------------|
-| **Tier 0: ローカル**（デフォルト）| 不要 | なし | ★★★ | 設定不要 |
-| **Tier 1: Ollama** | 不要 | localhost のみ | ★★★★ | Ollama をインストール |
-| **Tier 2: クラウドAPI** | あなたのキー | HTTPS | ★★★★★ | APIキー入力 |
+### AI翻訳（Ollama）のセットアップ
+
+1. [ollama.com](https://ollama.com/download) から Ollama をインストール
+2. ターミナルで `ollama pull qwen2.5:3b` を実行（約 2GB ダウンロード）
+3. grabtl の設定 → 「AI翻訳（Ollama）」を選択 → 接続テスト
+
+### API 翻訳のセットアップ
+
+1. grabtl の設定 → 使いたいエンジンを選択
+2. 「管理画面を開く」で API キーを取得
+3. API キーを入力 → 「テストして保存」
+
+## キーボードショートカット
+
+| キー | 動作 |
+|------|------|
+| **Ctrl+Shift+G** | 翻訳モードを開始（デフォルト。設定で変更可能） |
+| **Esc** | 選択をキャンセル / 翻訳結果を閉じる |
+| マウス右クリック | 選択をキャンセル |
+
+ホットキーはトレイアイコン → 設定 から変更できます（Ctrl+Shift+T, Ctrl+Alt+T, F9, F10 など）。
+
+## ゲーム用語辞書
+
+よく使われるゲーム用語は自動的に正しい訳語に変換されます:
+
+| 原文 | 翻訳 |
+|------|------|
+| GG | お疲れ様 |
+| LFG | メンバー募集 |
+| raid | レイド |
+| dungeon | ダンジョン |
+| buff / debuff | バフ / デバフ |
+| AFK | 離席中 |
 
 ## セキュリティ
 
-**「完璧なセキュリティ」ではなく「誠実な透明性」** を方針としています。詳細は [docs/security-design.md](docs/security-design.md) をご覧ください。
-
-**ポイント:**
 - APIキーは Windows 標準の暗号化（DPAPI）で保存。VS Code や Chrome と同じ方式です
-- 通信ログで、翻訳サービスに送信されるデータを確認できます
-- Tier 0 モードではネットワーク通信もAPIキーも一切不要です
+- 機械翻訳モードではネットワーク通信もAPIキーも一切不要です
+- 詳細は [docs/security-design.md](docs/security-design.md) をご覧ください
 
-### APIキーの保護について（正直な説明）
+## 動作環境
 
-APIキーは Windows Credential Manager（DPAPI）で暗号化保存されます。これは VS Code が拡張機能のシークレットを保存するのと同じ方式です。
-
-ただし、同じ Windows ユーザーで動作する他のプロセスからは理論上アクセス可能です。これは Windows の設計仕様であり、VS Code でも同じ制約があります（[詳細](docs/security-design.md#known-limitations-we-are-transparent-about-these)）。
-
-リスクを最小化するため、以下を推奨します:
-- **DeepL API Free**（無料枠）を使えば、漏洩しても金銭的被害がありません
-- 有料 API は**利用上限を設定**してください
-- 心配な場合は **Tier 0（完全ローカル）** でお使いください
-
-## エンジンの追加
-
-プラグインアーキテクチャを採用しています。OCR や翻訳エンジンの追加方法は [docs/plugin-guide.md](docs/plugin-guide.md) をご覧ください。
+- Windows 10 / 11（64bit）
+- ゲームは**ボーダーレスウィンドウモード**を推奨（排他フルスクリーンでは動作しません）
 
 ## 免責事項
 
