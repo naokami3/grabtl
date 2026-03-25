@@ -56,4 +56,4 @@ jobs:
       - name: 依存パッケージをインストール
         run: pip install -e ".[gui,dev]"
       - name: pip-audit
-        run: pip-audit
+        run: pip-audit --ignore-vuln CVE-2026-4539  # pygments: dev依存のみ、修正版未リリース
