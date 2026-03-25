@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   lint:
-    name: Lint & 型チェック
+    name: lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,7 +29,7 @@ jobs:
         run: mypy src/
 
   test:
-    name: テスト (Python ${{ matrix.python-version }})
+    name: test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -46,7 +46,7 @@ jobs:
         run: pytest --cov=src/grabtl --cov-report=term-missing
 
   audit:
-    name: セキュリティ監査
+    name: audit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
