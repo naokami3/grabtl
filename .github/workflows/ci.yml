@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   lint:
-    name: Lint & 型チェック
+    name: lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: 依存パッケージをインストール
-        run: pip install -e ".[dev]"
+        run: pip install -e ".[gui,dev]"
       - name: ruff check
         run: ruff check src/ tests/
       - name: ruff format --check
@@ -29,7 +29,7 @@ jobs:
         run: mypy src/
 
   test:
-    name: テスト (Python ${{ matrix.python-version }})
+    name: test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -41,12 +41,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: 依存パッケージをインストール
-        run: pip install -e ".[dev]"
+        run: pip install -e ".[gui,dev]"
       - name: pytest
         run: pytest --cov=src/grabtl --cov-report=term-missing
 
   audit:
-    name: セキュリティ監査
+    name: audit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -54,6 +54,6 @@ jobs:
         with:
           python-version: "3.11"
       - name: 依存パッケージをインストール
-        run: pip install -e ".[dev]"
+        run: pip install -e ".[gui,dev]"
       - name: pip-audit
-        run: pip-audit
+        run: pip-audit --ignore-vuln CVE-2026-4539  # pygments: dev依存のみ、修正版未リリース
