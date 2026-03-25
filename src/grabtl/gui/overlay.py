@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QPropertyAnimation, QRect
 from PySide6.QtGui import QColor, QFont, QGuiApplication, QPainter, QPainterPath
-from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QLabel, QScrollArea, QVBoxLayout, QWidget
 
 if TYPE_CHECKING:
     from PySide6.QtGui import QKeyEvent, QPaintEvent
@@ -18,14 +18,15 @@ _BORDER_RADIUS = 8
 _FADE_DURATION_MS = 300
 _PADDING = 12
 _MAX_WIDTH = 500
+_MAX_HEIGHT = 300
 
 
 class ResultOverlay(QWidget):
     """翻訳結果をフローティング表示するウィジェット。
 
-    選択領域の上方向に表示する。
-    翻訳結果が表示されている状態でオーバーレイ外をクリックすると消える。
-    次のホットキー押下でも自動的に消える。
+    翻訳テキストのみ表示（原文は非表示）。
+    長文はスクロールで閲覧可能。
+    オーバーレイ外クリックで消える。
     """
 
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -40,25 +41,40 @@ class ResultOverlay(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating, False)
         self.setMaximumWidth(_MAX_WIDTH)
+        self.setMaximumHeight(_MAX_HEIGHT)
 
-        # レイアウト
+        # メインレイアウト
         layout = QVBoxLayout(self)
         layout.setContentsMargins(_PADDING, _PADDING, _PADDING, _PADDING)
         layout.setSpacing(6)
 
-        # OCR テキスト（原文）
-        self._ocr_label = QLabel()
-        self._ocr_label.setWordWrap(True)
-        self._ocr_label.setFont(QFont("Segoe UI", 9))
-        self._ocr_label.setStyleSheet("color: #999999;")
-        layout.addWidget(self._ocr_label)
+        # スクロールエリア
+        self._scroll = QScrollArea()
+        self._scroll.setWidgetResizable(True)
+        self._scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        self._scroll.setStyleSheet(
+            "QScrollArea { background: transparent; }"
+            "QScrollBar:vertical { background: rgba(255,255,255,30); width: 6px; }"
+            "QScrollBar::handle:vertical { background: rgba(255,255,255,80); "
+            "border-radius: 3px; min-height: 20px; }"
+            "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }"
+        )
+
+        # スクロール内のコンテンツ
+        scroll_content = QWidget()
+        scroll_content.setStyleSheet("background: transparent;")
+        scroll_layout = QVBoxLayout(scroll_content)
+        scroll_layout.setContentsMargins(0, 0, 0, 0)
 
         # 翻訳テキスト
         self._translation_label = QLabel()
         self._translation_label.setWordWrap(True)
         self._translation_label.setFont(QFont("Segoe UI", 12))
         self._translation_label.setStyleSheet("color: #FFFFFF;")
-        layout.addWidget(self._translation_label)
+        scroll_layout.addWidget(self._translation_label)
+
+        self._scroll.setWidget(scroll_content)
+        layout.addWidget(self._scroll)
 
         # ステータス（スピナー/エラー用）
         self._status_label = QLabel()
@@ -71,7 +87,7 @@ class ResultOverlay(QWidget):
         # フェードアニメーション
         self._fade_anim: QPropertyAnimation | None = None
 
-        # 翻訳結果表示中かどうか（スピナー/エラーは外クリックで消さない）
+        # 翻訳結果表示中かどうか
         self._is_result_shown = False
 
         # 表示位置の基準
@@ -81,8 +97,7 @@ class ResultOverlay(QWidget):
         """処理中のスピナーを表示する。"""
         self._near_rect = near_rect
         self._is_result_shown = False
-        self._ocr_label.hide()
-        self._translation_label.hide()
+        self._scroll.hide()
         self._status_label.setText("翻訳中...")
         self._status_label.setStyleSheet("color: #AAAAAA;")
         self._status_label.show()
@@ -92,13 +107,11 @@ class ResultOverlay(QWidget):
         self.raise_()
 
     def show_ocr_preview(self, text: str, near_rect: QRect) -> None:
-        """OCR 結果を先行表示する。"""
+        """OCR 結果を先行表示する（翻訳中として表示）。"""
         self._near_rect = near_rect
-        self._ocr_label.setText(text)
-        self._ocr_label.show()
         self._translation_label.setText("翻訳中...")
         self._translation_label.setStyleSheet("color: #999999;")
-        self._translation_label.show()
+        self._scroll.show()
         self._status_label.hide()
         self._position_near(near_rect)
         self.setWindowOpacity(1.0)
@@ -109,24 +122,22 @@ class ResultOverlay(QWidget):
         """翻訳結果を表示する。オーバーレイ外クリックで消える。"""
         self._near_rect = near_rect
         self._is_result_shown = True
-        self._ocr_label.setText(result.ocr_result.text)
-        self._ocr_label.show()
         self._translation_label.setText(result.translated_text)
         self._translation_label.setStyleSheet("color: #FFFFFF;")
-        self._translation_label.show()
+        self._scroll.show()
+        self._scroll.verticalScrollBar().setValue(0)
         self._status_label.hide()
         self._position_near(near_rect)
         self.setWindowOpacity(1.0)
         self.show()
         self.raise_()
-        self.activateWindow()  # フォーカスを取得（外クリック検出のため）
+        self.activateWindow()
 
     def show_error(self, message: str, near_rect: QRect) -> None:
         """エラーをインライン表示する。外クリックで消える。"""
         self._near_rect = near_rect
         self._is_result_shown = True
-        self._ocr_label.hide()
-        self._translation_label.hide()
+        self._scroll.hide()
         self._status_label.setText(message)
         self._status_label.setStyleSheet("color: #FFA500;")
         self._status_label.show()
@@ -146,7 +157,7 @@ class ResultOverlay(QWidget):
     def _position_near(self, near_rect: QRect) -> None:
         """選択領域の上方向にオーバーレイを配置する。"""
         self.adjustSize()
-        overlay_h = self.sizeHint().height()
+        overlay_h = min(self.sizeHint().height(), _MAX_HEIGHT)
         overlay_w = min(self.sizeHint().width(), _MAX_WIDTH)
 
         # 選択領域の上に配置
@@ -157,10 +168,8 @@ class ResultOverlay(QWidget):
         screen = QGuiApplication.screenAt(near_rect.topLeft())
         if screen is not None:
             avail = screen.availableGeometry()
-            # 上にはみ出す場合は下に表示
             if y < avail.top():
                 y = near_rect.bottom() + 8
-            # 左右のはみ出し調整
             if x < avail.left():
                 x = avail.left() + 4
             if x + overlay_w > avail.right():
