@@ -427,7 +427,19 @@ def _create_translator(engine_type: str) -> Any:
 
 
 def _create_tray_icon() -> QIcon:
-    """シンプルなトレイアイコンを生成する。"""
+    """トレイアイコンを返す。.ico ファイルがあればそれを使い、なければ動的生成。"""
+    from pathlib import Path
+
+    # .ico ファイルを探す（バンドル環境 / 開発環境）
+    candidates = [
+        Path(sys.argv[0]).resolve().parent / "assets" / "grabtl.ico",
+        Path(__file__).resolve().parent.parent.parent.parent / "assets" / "grabtl.ico",
+    ]
+    for ico_path in candidates:
+        if ico_path.exists():
+            return QIcon(str(ico_path))
+
+    # フォールバック: 動的生成
     from PySide6.QtCore import Qt
     from PySide6.QtGui import QColor, QPainter
 

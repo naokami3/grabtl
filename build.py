@@ -49,6 +49,7 @@ _NUITKA_ARGS = [
     "--windows-file-version=0.1.0.0",
     "--windows-product-version=0.1.0.0",
     '--windows-file-description=Game Chat Translator',
+    f"--windows-icon-from-ico={_PROJECT_ROOT / 'assets' / 'grabtl.ico'}",
     # エントリポイント
     str(_PROJECT_ROOT / "build_entry.py"),
 ]
@@ -87,14 +88,24 @@ def main() -> None:
     print("=" * 60)
 
     # Nuitka ビルド
-    print("\n[1/2] Running Nuitka...")
+    print("\n[1/3] Running Nuitka...")
     result = subprocess.run(_NUITKA_ARGS, cwd=_PROJECT_ROOT)
     if result.returncode != 0:
         print("ERROR: Nuitka build failed!")
         sys.exit(1)
 
+    # アセットコピー
+    print("\n[2/3] Copying assets...")
+    assets_src = _PROJECT_ROOT / "assets"
+    assets_dest = _DIST_DIR / "assets"
+    if assets_src.exists():
+        if assets_dest.exists():
+            shutil.rmtree(assets_dest)
+        shutil.copytree(assets_src, assets_dest)
+        print(f"Copied {assets_src} -> {assets_dest}")
+
     # モデルコピー
-    print("\n[2/2] Copying translation models...")
+    print("\n[3/3] Copying translation models...")
     _copy_models()
 
     # サマリー

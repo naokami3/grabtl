@@ -12,6 +12,7 @@ OutputDir=build\installer
 OutputBaseFilename=grabtl-0.1.0-setup
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
+SetupIconFile=assets\grabtl.ico
 UninstallDisplayIcon={app}\grabtl.exe
 Compression=lzma2/ultra64
 SolidCompression=yes
