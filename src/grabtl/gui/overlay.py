@@ -197,9 +197,12 @@ class ResultOverlay(QWidget):
 
         path = QPainterPath()
         path.addRoundedRect(
-            0.0, 0.0,
-            float(self.width()), float(self.height()),
-            _BORDER_RADIUS, _BORDER_RADIUS,
+            0.0,
+            0.0,
+            float(self.width()),
+            float(self.height()),
+            _BORDER_RADIUS,
+            _BORDER_RADIUS,
         )
         painter.fillPath(path, _BG_COLOR)
         painter.end()

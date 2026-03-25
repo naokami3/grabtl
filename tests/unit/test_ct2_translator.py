@@ -97,7 +97,5 @@ class TestSplitSentences:
         assert len(result) == 2
 
     def test_略語で誤分割しない(self) -> None:
-        result = CT2Translator(model_dir="/dummy")._split_sentences(
-            "Dr. Smith found the artifact."
-        )
+        result = CT2Translator(model_dir="/dummy")._split_sentences("Dr. Smith found the artifact.")
         assert len(result) == 1

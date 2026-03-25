@@ -41,9 +41,7 @@ class TestGeminiTranslator:
         mock_response = MagicMock()
         mock_response.ok = True
         mock_response.json.return_value = {
-            "candidates": [
-                {"content": {"parts": [{"text": "こんにちは世界"}]}}
-            ],
+            "candidates": [{"content": {"parts": [{"text": "こんにちは世界"}]}}],
         }
 
         with patch.object(translator._session, "post", return_value=mock_response):

@@ -56,9 +56,7 @@ class RateLimitError(TranslationError):
     ユーザーへ: 「しばらく待ってから再試行してください。」
     """
 
-    def __init__(
-        self, message: str, *, provider: str = "", retry_after: int | None = None
-    ) -> None:
+    def __init__(self, message: str, *, provider: str = "", retry_after: int | None = None) -> None:
         super().__init__(message, provider=provider)
         self.retry_after = retry_after
 
@@ -101,9 +99,7 @@ class ServerError(TranslationError):
     デバッグ: status_code と url を含む。
     """
 
-    def __init__(
-        self, message: str, *, provider: str = "", status_code: int = 0
-    ) -> None:
+    def __init__(self, message: str, *, provider: str = "", status_code: int = 0) -> None:
         super().__init__(message, provider=provider)
         self.status_code = status_code
 

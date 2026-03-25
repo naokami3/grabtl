@@ -62,5 +62,3 @@ def clean_response(raw: str) -> str:
     text = "\n".join(filtered).strip()
 
     return text if text else raw.strip()
-
-

@@ -121,11 +121,13 @@ class TestWinOCREngine:
         from grabtl.core.ocr.winocr_engine import WinOCREngine
 
         engine = WinOCREngine()
-        image = _create_game_chat_image([
-            "Player1: Anyone want to raid?",
-            "Player2: Sure, invite me",
-            "Player3: Looking for healer",
-        ])
+        image = _create_game_chat_image(
+            [
+                "Player1: Anyone want to raid?",
+                "Player2: Sure, invite me",
+                "Player3: Looking for healer",
+            ]
+        )
         result = engine.recognize(image, lang="en")
 
         # チャットメッセージの主要な単語が認識されること
@@ -136,10 +138,12 @@ class TestWinOCREngine:
         from grabtl.core.ocr.winocr_engine import WinOCREngine
 
         engine = WinOCREngine()
-        image = _create_game_chat_image([
-            "Hello World",
-            "Good Morning",
-        ])
+        image = _create_game_chat_image(
+            [
+                "Hello World",
+                "Good Morning",
+            ]
+        )
         result = engine.recognize(image, lang="en")
 
         # 複数行として認識されること（改行が含まれる）

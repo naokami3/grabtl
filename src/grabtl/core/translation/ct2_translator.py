@@ -53,7 +53,7 @@ class CT2Translator:
             msg = (
                 f"翻訳モデルが見つかりません: {model_path}\n"
                 "argostranslate で言語パッケージをインストールしてください:\n"
-                "  python -c \""
+                '  python -c "'
                 "import argostranslate.package; "
                 "argostranslate.package.update_package_index(); "
                 "pkg = next(p for p in argostranslate.package.get_available_packages() "

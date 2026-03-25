@@ -124,9 +124,7 @@ def _handle_http_error(resp: requests.Response, *, provider: str) -> None:
             retry_after=int(retry_after) if retry_after and retry_after.isdigit() else None,
         )
     if code == 456:
-        raise QuotaExceededError(
-            f"{provider} の翻訳文字数上限に達しました。", provider=provider
-        )
+        raise QuotaExceededError(f"{provider} の翻訳文字数上限に達しました。", provider=provider)
     if code >= 500:
         raise ServerError(
             f"{provider} が一時的に利用できません。（HTTP {code}）",
@@ -138,5 +136,3 @@ def _handle_http_error(resp: requests.Response, *, provider: str) -> None:
         provider=provider,
         status_code=code,
     )
-
-

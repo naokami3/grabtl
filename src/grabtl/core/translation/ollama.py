@@ -111,8 +111,7 @@ class OllamaTranslator:
             )
             models = [m["name"] for m in tags.get("models", [])]
             return any(
-                m == self._model or m.startswith(self._model.split(":")[0] + ":")
-                for m in models
+                m == self._model or m.startswith(self._model.split(":")[0] + ":") for m in models
             )
         except Exception:
             return False

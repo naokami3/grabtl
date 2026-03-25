@@ -86,10 +86,12 @@ class TestPipelineE2E:
         assert result.translated_text == ""
 
     def test_ゲームチャット風画像を翻訳できる(self, pipeline: Pipeline) -> None:
-        image = _create_game_chat_image([
-            "Anyone want to raid?",
-            "Invite me please",
-        ])
+        image = _create_game_chat_image(
+            [
+                "Anyone want to raid?",
+                "Invite me please",
+            ]
+        )
         result = pipeline.run(image, source_lang="en", target_lang="ja")
 
         # OCR でテキストが認識され、翻訳されること

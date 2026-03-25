@@ -48,7 +48,9 @@ class HotkeyFilter:
                 self._cb = cb
 
             def nativeEventFilter(
-                self, event_type: QByteArray | bytes, message: int  # type: ignore[override]
+                self,
+                event_type: QByteArray | bytes | bytearray | memoryview[int],
+                message: int,  # type: ignore[override]
             ) -> tuple[bool, int]:
                 if event_type == b"windows_generic_MSG":
                     msg = ctypes.wintypes.MSG.from_address(int(message))
@@ -106,9 +108,7 @@ class TranslationWorker(QThread):
             translated = self._translator.translate(
                 ocr_result.text, source=self._source_lang, target=self._target_lang
             )
-            self.finished.emit(
-                TranslationResult(ocr_result=ocr_result, translated_text=translated)
-            )
+            self.finished.emit(TranslationResult(ocr_result=ocr_result, translated_text=translated))
         except Exception as e:
             self.error.emit(str(e))
         finally:
@@ -154,7 +154,7 @@ class TrayApp:
 
         # 翻訳ワーカー
         self._worker: TranslationWorker | None = None
-        self._logical_rect = QRect()   # オーバーレイ表示位置用（論理座標）
+        self._logical_rect = QRect()  # オーバーレイ表示位置用（論理座標）
         self._physical_rect = QRect()  # キャプチャ用（物理ピクセル座標）
 
         # 設定ダイアログ（多重起動防止用の参照）
@@ -243,9 +243,7 @@ class TrayApp:
 
         settings = QSettings()
         hotkey_name = settings.value("app/hotkey", _DEFAULT_HOTKEY)
-        modifiers, vk = HOTKEY_PRESETS.get(
-            str(hotkey_name), HOTKEY_PRESETS[_DEFAULT_HOTKEY]
-        )
+        modifiers, vk = HOTKEY_PRESETS.get(str(hotkey_name), HOTKEY_PRESETS[_DEFAULT_HOTKEY])
         ctypes.windll.user32.RegisterHotKey(0, _HOTKEY_ID, modifiers, vk)
 
     def _unregister_hotkey(self) -> None:
@@ -282,9 +280,7 @@ class TrayApp:
         try:
             image = capture_region(phys.x(), phys.y(), phys.width(), phys.height())
         except Exception as e:
-            self._result_overlay.show_error(
-                f"キャプチャ失敗: {e}", self._logical_rect
-            )
+            self._result_overlay.show_error(f"キャプチャ失敗: {e}", self._logical_rect)
             return
 
         # キャプチャ後にスピナー表示

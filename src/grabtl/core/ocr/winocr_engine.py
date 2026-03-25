@@ -45,9 +45,7 @@ class WinOCREngine:
         w, h = pil_image.size
         if w < min_dimension or h < min_dimension:
             scale = max(min_dimension / w, min_dimension / h, 2.0)
-            pil_image = pil_image.resize(
-                (int(w * scale), int(h * scale)), Image.Resampling.LANCZOS
-            )
+            pil_image = pil_image.resize((int(w * scale), int(h * scale)), Image.Resampling.LANCZOS)
 
         result = self._winocr.recognize_pil_sync(pil_image, lang=lang)
 

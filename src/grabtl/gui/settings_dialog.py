@@ -56,9 +56,7 @@ class _OllamaCheckWorker(QThread):
                 return
             model_ok = translator.is_model_available()
             if not model_ok:
-                self.result.emit(
-                    True, False, f"モデル '{self._model}' が未ダウンロードです"
-                )
+                self.result.emit(True, False, f"モデル '{self._model}' が未ダウンロードです")
                 return
             self.result.emit(True, True, "接続OK・モデル準備完了")
         except Exception as e:
@@ -70,9 +68,7 @@ class _ApiKeyCheckWorker(QThread):
 
     result = Signal(bool, str)  # (success, message)
 
-    def __init__(
-        self, engine: str, api_key: str, parent: QWidget | None = None
-    ) -> None:
+    def __init__(self, engine: str, api_key: str, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._engine = engine
         self._api_key = api_key
@@ -84,7 +80,11 @@ class _ApiKeyCheckWorker(QThread):
         try:
             if self._engine == EngineType.DEEPL:
                 # DeepL: 使用量取得（翻訳せずにキーを検証）
-                base = "https://api-free.deepl.com" if self._api_key.endswith(":fx") else "https://api.deepl.com"
+                base = (
+                    "https://api-free.deepl.com"
+                    if self._api_key.endswith(":fx")
+                    else "https://api.deepl.com"
+                )
                 resp = requests.get(
                     f"{base}/v2/usage",
                     headers={"Authorization": f"DeepL-Auth-Key {self._api_key}"},
@@ -436,9 +436,7 @@ class SettingsDialog(QWidget):
         )
         self._api_check_worker.start()
 
-    def _on_api_check_result(
-        self, engine: str, api_key: str, success: bool, message: str
-    ) -> None:
+    def _on_api_check_result(self, engine: str, api_key: str, success: bool, message: str) -> None:
         """API キーテスト結果を処理する。"""
         widgets = self._api_pages[engine]
         test_btn: QPushButton = widgets["test_btn"]
@@ -469,9 +467,7 @@ class SettingsDialog(QWidget):
         self._check_worker.result.connect(self._on_ollama_check_result)
         self._check_worker.start()
 
-    def _on_ollama_check_result(
-        self, server_ok: bool, model_ok: bool, message: str
-    ) -> None:
+    def _on_ollama_check_result(self, server_ok: bool, model_ok: bool, message: str) -> None:
         """Ollama 接続テスト結果。"""
         self._test_btn.setText("接続テスト")
         self._test_btn.setEnabled(True)

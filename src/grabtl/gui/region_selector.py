@@ -88,10 +88,18 @@ class RegionSelector(QWidget):
 
             # QPainterPath で選択領域に穴を開ける
             path = QPainterPath()
-            path.addRect(float(self.rect().x()), float(self.rect().y()),
-                         float(self.rect().width()), float(self.rect().height()))
-            path.addRect(float(selection.x()), float(selection.y()),
-                         float(selection.width()), float(selection.height()))
+            path.addRect(
+                float(self.rect().x()),
+                float(self.rect().y()),
+                float(self.rect().width()),
+                float(self.rect().height()),
+            )
+            path.addRect(
+                float(selection.x()),
+                float(selection.y()),
+                float(selection.width()),
+                float(selection.height()),
+            )
             painter.fillPath(path, _OVERLAY_COLOR)
 
             # 選択矩形の枠線
@@ -111,8 +119,7 @@ class RegionSelector(QWidget):
             painter.drawText(
                 self.rect(),
                 Qt.AlignmentFlag.AlignCenter,
-                "翻訳したいテキストをドラッグで選択してください\n\n"
-                "Esc でキャンセル",
+                "翻訳したいテキストをドラッグで選択してください\n\nEsc でキャンセル",
             )
 
         painter.end()
