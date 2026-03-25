@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import shutil
+import subprocess
 import webbrowser
 from typing import Any
 
@@ -265,32 +267,52 @@ class SettingsDialog(QWidget):
 
         desc = QLabel(
             "ローカル AI で高品質な翻訳を行います。\n"
-            "Ollama のインストールとモデルのダウンロードが必要です。"
+            "以下の手順で Ollama をセットアップしてください。"
         )
         desc.setWordWrap(True)
         layout.addWidget(desc)
 
-        self._ollama_status = QLabel("ステータス: 未確認")
-        layout.addWidget(self._ollama_status)
+        # 手順 1: Ollama ダウンロード
+        step1 = QLabel("① 公式サイトから Ollama をインストール")
+        step1.setStyleSheet("font-weight: bold;")
+        layout.addWidget(step1)
 
         download_btn = QPushButton("Ollama をダウンロード（公式サイトを開く）")
         download_btn.clicked.connect(lambda: webbrowser.open(_OLLAMA_DOWNLOAD_URL))
         layout.addWidget(download_btn)
 
+        # 手順 2: PowerShell でモデルをダウンロード
+        _pull_cmd = f"ollama pull {_DEFAULT_OLLAMA_MODEL}"
+
+        step2 = QLabel("② PowerShell を開いて以下のコマンドを実行")
+        step2.setStyleSheet("font-weight: bold;")
+        layout.addWidget(step2)
+
         cmd_layout = QHBoxLayout()
-        cmd_label = QLabel(f"ollama pull {_DEFAULT_OLLAMA_MODEL}")
+        cmd_label = QLabel(_pull_cmd)
         cmd_label.setStyleSheet(
-            "background-color: #F0F0F0; padding: 4px 8px; "
-            "border: 1px solid #CCCCCC; font-family: Consolas;"
+            "background-color: #1E1E1E; color: #CCCCCC; padding: 6px 10px; "
+            "border-radius: 4px; font-family: Consolas;"
         )
+        cmd_label.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
         copy_btn = QPushButton("コピー")
         copy_btn.setFixedWidth(60)
-        copy_btn.clicked.connect(
-            lambda: self._copy_to_clipboard(f"ollama pull {_DEFAULT_OLLAMA_MODEL}")
-        )
+        copy_btn.clicked.connect(lambda: self._copy_to_clipboard(_pull_cmd))
         cmd_layout.addWidget(cmd_label)
         cmd_layout.addWidget(copy_btn)
         layout.addLayout(cmd_layout)
+
+        open_ps_btn = QPushButton("PowerShell を開く")
+        open_ps_btn.clicked.connect(self._open_powershell)
+        layout.addWidget(open_ps_btn)
+
+        # 手順 3: 接続テスト
+        step3 = QLabel("③ セットアップ完了を確認")
+        step3.setStyleSheet("font-weight: bold;")
+        layout.addWidget(step3)
+
+        self._ollama_status = QLabel("ステータス: 未確認")
+        layout.addWidget(self._ollama_status)
 
         self._test_btn = QPushButton("接続テスト")
         self._test_btn.clicked.connect(self._run_ollama_check)
@@ -481,6 +503,18 @@ class SettingsDialog(QWidget):
         else:
             self._ollama_status.setText(f"ステータス: ❌ {message}")
             self._ollama_status.setStyleSheet("color: red;")
+
+    def _open_powershell(self) -> None:
+        """PowerShell を新しいウィンドウで開く。"""
+        ps_path = shutil.which("pwsh") or shutil.which("powershell")
+        if ps_path is None:
+            self._ollama_status.setText("ステータス: ❌ PowerShell が見つかりません")
+            self._ollama_status.setStyleSheet("color: red;")
+            return
+        subprocess.Popen(  # noqa: S603
+            [ps_path, "-NoExit"],
+            creationflags=subprocess.CREATE_NEW_CONSOLE,  # type: ignore[attr-defined]
+        )
 
     def _copy_to_clipboard(self, text: str) -> None:
         """テキストをクリップボードにコピーする。"""
