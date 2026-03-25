@@ -9,6 +9,7 @@ argostranslate がダウンロードしたモデルファイルをそのまま�
 from __future__ import annotations
 
 import gc
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -17,6 +18,21 @@ import pysbd
 
 _DEFAULT_PACKAGES_DIR = Path.home() / ".local" / "share" / "argos-translate" / "packages"
 _UNLOAD_AFTER_SECONDS = 300  # 5分
+
+
+def _get_default_model_dir() -> Path:
+    """デフォルトのモデルディレクトリを返す。
+
+    Nuitka バンドル環境では exe と同階層の models/en_ja/ を参照する。
+    開発環境では argostranslate のパッケージディレクトリを参照する。
+    """
+    # Nuitka バンドル環境の判定
+    if "__compiled__" in dir() or getattr(sys, "frozen", False):
+        exe_dir = Path(sys.argv[0]).resolve().parent
+        bundled = exe_dir / "models" / "en_ja"
+        if bundled.exists():
+            return bundled
+    return _DEFAULT_PACKAGES_DIR / "en_ja"
 
 
 class CT2Translator:
@@ -30,7 +46,7 @@ class CT2Translator:
         if model_dir is not None:
             self._model_dir = Path(model_dir)
         else:
-            self._model_dir = _DEFAULT_PACKAGES_DIR / "en_ja"
+            self._model_dir = _get_default_model_dir()
 
         self._translator: Any = None
         self._sp: Any = None
